@@ -38,17 +38,17 @@ function [txsignal, conf] = txofdm(txbits,conf)
     ofdmSymbols = [trainSymFreq, ofdmSymbols]; % Prepend training symbol
     nOfdmSym = nOfdmSym + 1; % Update the number of OFDM symbols
 
-    % IFFT + CP insertion
+    % IFF
     txBlocks = zeros(N+Ncp,nOfdmSym);
     for i = 1:nOfdmSym
         %IFFT
-        s = ifft(ofdmSymbols(:,i));
+        s = ifft(ofdmSymbols(:,i)); % baseband, fs = fs_ofdm
         cp = s(end-Ncp+1:end);
         %combine payload and cp
         txBlocks(:,i) = [cp; s];
     end
     
-    % Serialize OFDM blocks
+    % Serialize
     ofdm_bb = txBlocks(:);
     
     % Resampling at audio frequency
@@ -58,16 +58,15 @@ function [txsignal, conf] = txofdm(txbits,conf)
     preambleBits = preamble_generate(conf.sc.nsyms);    % LFSR preamble
     conf.sc.preambleBits = preambleBits;                % for RX (it can also be regenerated)
 
-    % BPSK mapping: 0 -> +1, 1 -> -1
+    % BPSK mapping
     bpskSyms = 2*preambleBits - 1;
 
     % Upsampling at audio frequency
     bpsk_up = upsample(bpskSyms, os_sc);
 
-    % Pulse shaping with RRC pulse
+    % Pulse shaping
     preamble_bb = conv(bpsk_up, conf.sc.txpulse);
 
-    % Concatenate preamble and OFDM basebande
     tx_baseband = [preamble_bb; ofdm_bb_os];
 
     % Mix the signal with the carrier frequency

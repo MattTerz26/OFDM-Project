@@ -10,5 +10,6 @@ function [rxbits, conf] = rxofdm(rxsignal,conf)
 %   rxbits      : received bits
 %
 
+
 rxbits = zeros(conf.nbits,1);
 end
