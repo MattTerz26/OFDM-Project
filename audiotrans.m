@@ -13,6 +13,9 @@ clc;
 % audio: use the loudspeaker and microphone for the data transmission
 conf.audiosystem = 'emulator'; 
 
+% Task reciever selection
+conf.rx_mode = "task1_basic";
+
 %Emulator configuration
 conf.emulator_idx = 1; % 1 to 5 yields different channels
 conf.emulator_snr = 100;

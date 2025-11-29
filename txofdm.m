@@ -16,13 +16,8 @@ function [txsignal, conf] = txofdm(txbits,conf)
     fc          = conf.f_c;                   % 8000 Hz
     os_sc       = conf.sc.os_factor;
     
-    % Bit grouping and mapping in 2 bit groups
-    txbits_reshaped = reshape(txbits, bitsPerSym, []).';        % [Nsym x 2]
-    symIdx = txbits_reshaped(:,1)*2 + txbits_reshaped(:,2);     % 0..3
-    
-    % QPSK mapping (gray)
-    QPSK = [1+1j, -1+1j, -1-1j, 1-1j] / sqrt(2); % normalized
-    qpskSyms = QPSK(symIdx+1).';
+    % mapping
+    qpskSyms = mapper_QPSK(txbits);
     
     % Symbols in OFDM matrix -> N x Nsym
     nOfdmSym = length(qpskSyms)/N;
