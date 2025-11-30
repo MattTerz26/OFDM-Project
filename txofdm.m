@@ -51,7 +51,6 @@ function [txsignal, conf] = txofdm(txbits,conf)
     
     % Generate single carrier BPSK preamble
     preambleBits = preamble_generate(conf.sc.nsyms);    % LFSR preamble
-    conf.sc.preambleBits = preambleBits;                % for RX (it can also be regenerated)
 
     % BPSK mapping: 0 -> +1, 1 -> -1
     bpskSyms = 2*preambleBits - 1;
@@ -61,7 +60,8 @@ function [txsignal, conf] = txofdm(txbits,conf)
 
     % Pulse shaping with RRC pulse
     preamble_bb = conv(bpsk_up, conf.sc.txpulse);
-
+    conf.sc.preamble_bb = preamble_bb;
+    
     % Concatenate preamble and OFDM basebande
     tx_baseband = [preamble_bb; ofdm_bb_os];
 

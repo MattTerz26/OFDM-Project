@@ -4,7 +4,6 @@
 
 clear all;
 close all;
-clc;
 
 % Configuration Values
 
@@ -14,10 +13,10 @@ clc;
 conf.audiosystem = 'emulator'; 
 
 % Task reciever selection
-conf.rx_mode = "task1_basic";
+conf.rx_mode = "task2";
 
 %Emulator configuration
-conf.emulator_idx = 1; % 1 to 5 yields different channels
+conf.emulator_idx = 2; % 1 to 5 yields different channels
 conf.emulator_snr = 100;
 
 % General parameters 
@@ -55,6 +54,7 @@ conf.sc.txpulse    = rrc(conf.sc.os_factor,0.22,conf.sc.txpulse_length);
 disp('Start OFDM Transmission')
 
 % Generate random data
+rng(0);
 txbits = randi([0 1],conf.nbits,1);
 
 % Transmit Function
