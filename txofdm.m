@@ -61,12 +61,14 @@ function [txsignal, conf] = txofdm(txbits,conf)
     % Pulse shaping with RRC pulse
     preamble_bb = conv(bpsk_up, conf.sc.txpulse);
     conf.sc.preamble_bb = preamble_bb;
-    
+    preamble_bb = preamble_bb / max(abs(preamble_bb) + 1e-12);
+
     % Concatenate preamble and OFDM basebande
     tx_baseband = [preamble_bb; ofdm_bb_os];
-
+    
     % Mix the signal with the carrier frequency
     n = (0:length(tx_baseband)-1).';
     audio_carrier = exp(1j*2*pi*fc*n/fs_audio);
-    txsignal = real(tx_baseband .* audio_carrier);
+    passband = real(tx_baseband .* audio_carrier);
+    txsignal = passband / (max(abs(passband)) + 1e-12) * 0.9;
 end

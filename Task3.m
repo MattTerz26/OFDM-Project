@@ -3,10 +3,12 @@ clear; close all; clc;
 % Base config
 conf.audiosystem    = 'emulator';
 conf.emulator_idx   = 2;        
-conf.emulator_snr   = 100;
+conf.emulator_snr   = 25;
 
 conf.nbits   = 512*2*50;       
-conf.f_c     = 8000;   
+conf.f_c     = 8000;
+conf.Nsym    = 50;
+NsymTot = conf.Nsym + 1;
 
 % SC preamble
 conf.sc.f_sym = 1000;          
@@ -46,8 +48,10 @@ nOfdmSymTot    = nDataOfdmSym + 1;  % +1 Trainingssymbol
 fprintf('Number of OFDM data symbols: %d\n', nDataOfdmSym);
 
 %% ----------------- GENERATE DATA & TRANSMIT ONCE -----------------
-txbits = randi([0 1], conf.nbits, 1);
+% txbits = randi([0 1], conf.nbits, 1);
 
+txbits = zeros(conf.nbits, 1);          % same symbol over and over
+X_pilot = (1+1j)/sqrt(2) * ones(N, conf.Nsym);
 [txsignal, conf] = txofdm(txbits, conf);
 
 % Padding wie in Task 1 / 2
@@ -122,30 +126,32 @@ for chID = channelIDs
     % back to freq domain
     Z = fft(rxNoCP, N, 1);              
 
-    %% ----- channel estimation from training symbol -----
-    Z_train      = Z(:,1);                      
-    trainSymFreq = conf.ofdm.trainSymFreq;       % known from tx
-
-    H_est = Z_train ./ trainSymFreq;             % N x 1
+    %% ----- channel estimation from training symbol -----                     
+    pilotSym = conf.ofdm.trainSymFreq;
+    X_pilot  = repmat(pilotSym, 1, NsymTot); 
+    H_est = Z ./ X_pilot;       % N x NsymTot
 
     %% ----- 1) power delay profile from H_est -----
-    h_est = ifft(H_est, Nfft_delay);             % Nfft_delay x 1
-    pdp   = abs(h_est).^2;
-    pdp   = pdp / max(pdp + eps); % normalization -> pdp is between 0..1; eps prevents division by 0
+    h_est = ifft(H_est, Nfft_delay);                % Nfft_delay x 1
+    pdp   = abs(h_est(:,1)).^2;
+    pdp_mean = mean(abs(h_est).^2, 2);
+    pdp   = pdp / max(pdp + eps);                   % normalization -> pdp is between 0..1; eps prevents division by 0
+    pdp_mean = pdp_mean / max(pdp_mean + eps);
     pdp_dB = 10*log10(pdp + eps);
+    pdp_mean_dB = 10*log10(pdp_mean + eps);
 
     delayAxis = 0:Nfft_delay-1;
 
     fig1 = figure;
-    stem(delayAxis, pdp_dB, 'filled');
+    stem(delayAxis, pdp_dB, delayAxis, pdp_mean_dB, 'filled');
     xlabel('Tap index (sample)');
     ylabel('Normalized power [dB]');
     title(sprintf('Power Delay Profile - Channel ID %d', chID));
     grid on;
-    saveas(fig1, fullfile(outdir, sprintf('pdp_chID_%d.png', chID)));
+    % saveas(fig1, fullfile(outdir, sprintf('pdp_chID_%d.png', chID)));
 
     %% ----- 2) frequency response -----
-    H_plot   = fftshift(H_est); % center zero frequency
+    H_plot   = fftshift(H_est(:,1)); % center zero frequency
     fAxis    = linspace(-0.5, 0.5, Nfft_freq);
     H_dB     = 20*log10(abs(H_plot) + eps);
 
@@ -155,9 +161,36 @@ for chID = channelIDs
     ylabel('|H(f)| [dB]');
     title(sprintf('Frequency response - Channel ID %d', chID));
     grid on;
-    saveas(fig2, fullfile(outdir, sprintf('freqresp_chID_%d.png', chID)));
+    % saveas(fig2, fullfile(outdir, sprintf('freqresp_chID_%d.png', chID)));
+    
+    %% ----- 3) Channel evolution over time
+    figure;
+    imagesc(1:NsymTot, 1:N, abs(H_est));
+    axis xy;
+    xlabel('OFDM symbol index (n)');
+    ylabel('Subcarrier index (m)');
+    title(sprintf('Channel magnitude |H(m,n)|, emulator %d', conf.emulator_idx));
+    colorbar;
+    
+    % sub crrier channel evolution
+    m0 = floor(N/2) + 1;   % haf band subcarrer
+    
+    figure;
+    subplot(2,1,1);
+    plot(1:NsymTot, abs(H_est(m0,:)), '-o');
+    grid on;
+    xlabel('OFDM symbol index n');
+    ylabel('|H(m_0,n)|');
+    title(sprintf('Channel evolution in amplitude, m_0 = %d', m0));
+    
+    subplot(2,1,2);
+    plot(1:NsymTot, unwrap(angle(H_est(m0,:))), '-o');
+    grid on;
+    xlabel('OFDM symbol index n');
+    ylabel('angle(H(m_0,n)) [rad]');
+    title(sprintf('Channel evolution in phase, m_0 = %d', m0));
 
-    %% ----- 3) RMS delay spread value -----
+    %% ----- 4) RMS delay spread value -----
     pdp_lin = pdp / sum(pdp);
     mu_tau  = sum(delayAxis(:) .* pdp_lin);
     tau2    = sum((delayAxis(:).^2) .* pdp_lin);

@@ -114,7 +114,7 @@ xlabel('OFDM data symbol index');
 ylabel('BER per symbol');
 title(sprintf('Channel ID = %d, SNR = %d dB (per-symbol BER)', ...
                conf.emulator_idx, conf.emulator_snr));
-legend('Base RX','Tracking RX','Location','best');
+legend('Task1 RX','Task2 RX','Location','best');
 
 %% ----------------- PLOT: Cumulative BER -----------------
 figure;
@@ -125,10 +125,10 @@ xlabel('Number of OFDM data symbols used (from start)');
 ylabel('Cumulative BER');
 title(sprintf('Channel ID = %d, SNR = %d dB (cumulative BER)', ...
                conf.emulator_idx, conf.emulator_snr));
-legend('Base RX','Tracking RX','Location','best');
+legend('Task1 RX','Task2 RX','Location','best');
 
-%% ----------------- Soglia: fino a dove "ha senso"? -----------------
-th = 0.01;   % soglia, per esempio 1%
+%% ----------------- Threshold -----------------
+th = 0.01;
 
 idx_good_base = find(BER_cum_base < th);
 idx_good_tr   = find(BER_cum_tr   < th);
