@@ -143,12 +143,15 @@ for chID = channelIDs
     delayAxis = 0:Nfft_delay-1;
 
     fig1 = figure;
-    stem(delayAxis, pdp_dB, delayAxis, pdp_mean_dB, 'filled');
+    hold on;
+    stem(delayAxis, pdp_dB, 'filled');
+    stem(delayAxis, pdp_mean_dB, 'filled');
     xlabel('Tap index (sample)');
     ylabel('Normalized power [dB]');
     title(sprintf('Power Delay Profile - Channel ID %d', chID));
     grid on;
-    % saveas(fig1, fullfile(outdir, sprintf('pdp_chID_%d.png', chID)));
+    legend('First Symbol','Average over all Symbols');
+    saveas(fig1, fullfile(outdir, sprintf('pdp_chID_%d.png', chID)));
 
     %% ----- 2) frequency response -----
     H_plot   = fftshift(H_est(:,1)); % center zero frequency
@@ -161,35 +164,37 @@ for chID = channelIDs
     ylabel('|H(f)| [dB]');
     title(sprintf('Frequency response - Channel ID %d', chID));
     grid on;
-    % saveas(fig2, fullfile(outdir, sprintf('freqresp_chID_%d.png', chID)));
+    saveas(fig2, fullfile(outdir, sprintf('freqresp_chID_%d.png', chID)));
     
     %% ----- 3) Channel evolution over time
-    figure;
+    fig3 = figure;
     imagesc(1:NsymTot, 1:N, abs(H_est));
     axis xy;
     xlabel('OFDM symbol index (n)');
     ylabel('Subcarrier index (m)');
-    title(sprintf('Channel magnitude |H(m,n)|, emulator %d', conf.emulator_idx));
+    title(sprintf('|H(m,n)| - Channel ID %d', chID));
     colorbar;
-    
+    saveas(fig3, fullfile(outdir, sprintf('channel_time_ev_%d.png', chID)));
+
+
     % sub crrier channel evolution
     m0 = floor(N/2) + 1;   % haf band subcarrer
     
-    figure;
+    fig4 = figure;
     subplot(2,1,1);
     plot(1:NsymTot, abs(H_est(m0,:)), '-o');
     grid on;
     xlabel('OFDM symbol index n');
     ylabel('|H(m_0,n)|');
-    title(sprintf('Channel evolution in amplitude, m_0 = %d', m0));
+    title(sprintf('Time evolution in amplitude, m_0 = %d - Channel ID %d', m0, chID));
     
     subplot(2,1,2);
     plot(1:NsymTot, unwrap(angle(H_est(m0,:))), '-o');
     grid on;
     xlabel('OFDM symbol index n');
     ylabel('angle(H(m_0,n)) [rad]');
-    title(sprintf('Channel evolution in phase, m_0 = %d', m0));
-
+    title(sprintf('Time evolution in phase, m_0 = %d - Channel ID %d', m0, chID));
+    saveas(fig4, fullfile(outdir, sprintf('channel_time_ev_detail_%d.png', chID)));
     %% ----- 4) RMS delay spread value -----
     pdp_lin = pdp / sum(pdp);
     mu_tau  = sum(delayAxis(:) .* pdp_lin);
