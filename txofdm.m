@@ -24,10 +24,9 @@ function [txsignal, conf] = txofdm(txbits,conf)
     ofdmSymbols = reshape(qpskSyms,N,nOfdmSym); %512 x 50
 
     % Insert known training OFDM symbol
-    trainBits = preamble_generate(N * bitsPerSym);
-    trainSymFreq = mapper_QPSK(trainBits); 
-    conf.ofdm.trainSymFreq = trainSymFreq;
-    %trainSymFreq = (1+1j)/sqrt(2) * ones(N, 1);
+    %trainBits = preamble_generate(N * bitsPerSym);
+    %trainSymFreq = mapper_QPSK(trainBits); 
+    trainSymFreq = (1+1j)/sqrt(2) * ones(N, 1);
     
     % Save in conf train symbol to use it in RX
     conf.ofdm.trainSymFreq = trainSymFreq;
@@ -76,10 +75,11 @@ function [txsignal, conf] = txofdm(txbits,conf)
     alpha_pre  = sqrt(P0 / P_preamble);
     alpha_ofdm = sqrt(P0 / P_ofdm);
     preamble_bb_norm = alpha_pre  * preamble_bb;
+    %conf.sc.preamble_bb = preamble_bb_norm;
     ofdm_bb_os_norm  = alpha_ofdm * ofdm_bb_os;
 
     % Concatenate preamble and OFDM basebande
-    tx_baseband = [preamble_bb_norm; ofdm_bb_os_norm];
+    tx_baseband = [preamble_bb; ofdm_bb_os];
     
     % Mix the signal with the carrier frequency
     n = (0:length(tx_baseband)-1).';

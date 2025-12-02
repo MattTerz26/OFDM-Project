@@ -86,7 +86,7 @@ function rxbits = rx_task1(rxsignal, conf)
     % Channel estimation from training symbol
     Z_train = Z(:,1);                   % training symbol in freq
     trainSymFreq = conf.ofdm.trainSymFreq;   % saved in TX
-
+    
     % Channel estimation
     H_est = Z_train ./ trainSymFreq;
 
