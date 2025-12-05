@@ -53,6 +53,7 @@ function rxbits = rx_task1(rxsignal, conf)
     
     beginning_of_data = frame_sync_ofdm(bb_rx_filt, conf);
 
+
     start_ofdm_idx = beginning_of_data + 1;
 
     if start_ofdm_idx <= 0 || start_ofdm_idx > length(bb_rx_filt)
@@ -185,7 +186,7 @@ function rxbits = rx_task2(rxsignal, conf)
     % Phase tracking and phase correction
     theta_hat = zeros(N, nDataSym+1);
     alpha = 1;                 % IIR filter coefficient
-    theta_hat(:, 1) = angle(trainSymFreq);
+    theta_hat(:, 1) = 0;
     Y_corr = zeros(size(Y));
 
     for n = 1:nDataSym      % looping through OFDM data symbols
@@ -194,7 +195,7 @@ function rxbits = rx_task2(rxsignal, conf)
             
             % Viterbi-Viterbi
             baseTheta = 0.25 * angle(-y^4);
-            candidates = baseTheta + pi/2 * (-1:4);   % 5 candidates
+            candidates = baseTheta + pi/2 * (-1:4);   % 6 candidates
     
             % closest candidate
             [~, idx] = min(abs(candidates - theta_hat(m, n)));
@@ -207,7 +208,7 @@ function rxbits = rx_task2(rxsignal, conf)
             Y_corr(m,n) = y * exp(-1j*theta_hat(m, n+1));
         end
     end
-
+    
     A_hat = Y_corr(:);
 
     % Demap

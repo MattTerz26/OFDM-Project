@@ -24,9 +24,8 @@ function [txsignal, conf] = txofdm(txbits,conf)
     ofdmSymbols = reshape(qpskSyms,N,nOfdmSym); %512 x 50
 
     % Insert known training OFDM symbol
-    %trainBits = preamble_generate(N * bitsPerSym);
-    %trainSymFreq = mapper_QPSK(trainBits); 
-    trainSymFreq = (1+1j)/sqrt(2) * ones(N, 1);
+    trainBits = preamble_generate(N * bitsPerSym);
+    trainSymFreq = mapper_QPSK(trainBits); 
     
     % Save in conf train symbol to use it in RX
     conf.ofdm.trainSymFreq = trainSymFreq;
