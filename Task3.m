@@ -70,7 +70,9 @@ Nfft_delay = N;            % FFT length for CIR
 Nfft_freq  = N;            % for frequency response
 
 for chID = channelIDs
-
+    % if chID == 3
+    %     break
+    % end
     fprintf('\n================ CHANNEL ID %d ================\n', chID);
 
     % channel parameterss
@@ -130,40 +132,88 @@ for chID = channelIDs
 
     %% ----- 1) power delay profile from H_est -----
     m1 = 10;
-    h_est = ifft(H_est, Nfft_delay);                % Nfft_delay x 1
-    pdp   = abs(h_est(:, m1)).^2;
-    pdp_mean = mean(abs(h_est).^2, 2);
-    pdp   = pdp / max(pdp + eps);                   % normalization -> pdp is between 0..1; eps prevents division by 0
-    pdp_mean = pdp_mean / max(pdp_mean + eps);
-    pdp_dB = 10*log10(pdp + eps);
+    h_est       = ifft(H_est, Nfft_delay, 1);                % Nfft_delay x 1
+    pdp         = abs(h_est(:, m1)).^2;
+    pdp_mean    = mean(abs(h_est).^2, 2);
+    pdp         = pdp / max(pdp + eps);                   % normalization -> pdp is between 0..1; eps prevents division by 0
+    pdp_mean    = pdp_mean / max(pdp_mean + eps);
+    pdp_dB      = 10*log10(pdp + eps);
     pdp_mean_dB = 10*log10(pdp_mean + eps);
 
     delayAxis = 0:Nfft_delay-1;
-
+    thr_dB  = -30;
+    idx_sig = find(pdp_mean_dB > thr_dB);
+    L_eff   = max(idx_sig);
+    
+    fprintf('Channel %d: Effective Length (L_eff): %d\n', chID, L_eff);
+    
+    % NEW PLOT: more understandable
     fig1 = figure;
     hold on;
-    stem(delayAxis, pdp_dB, 'filled');
-    stem(delayAxis, pdp_mean_dB, 'filled');
+    plot(delayAxis, pdp_dB, 'LineWidth', 1.2);
+    plot(delayAxis, pdp_mean_dB, 'LineWidth', 1.2);
+    yline(thr_dB, '--');
+    grid on;
     xlabel('Tap index (sample)');
     ylabel('Normalized power [dB]');
-    title(sprintf('Power Delay Profile - Channel ID %d', chID));
-    grid on;
-    legend(sprintf('Sample %d', m1),'Average over all samples');
+    title(sprintf('Power Delay Profile - Channel %d', chID));
+    legend(sprintf('PDP Symbol %d', m1), 'PDP Mean');
     saveas(fig1, fullfile(outdir, sprintf('pdp_chID_%d.png', chID)));
 
-    %% ----- 2) frequency response -----
-    H_plot   = fftshift(H_est(:,m1));         % center zero frequency
-    fAxis    = linspace(-0.5, 0.5, Nfft_freq);
-    H_dB     = 20*log10(abs(H_plot) + eps);
+    % OLD PLOT
+    % fig1 = figure;
+    % hold on;
+    % stem(delayAxis, pdp_dB, 'filled');
+    % stem(delayAxis, pdp_mean_dB, 'filled');
+    % xlabel('Tap index (sample)');
+    % ylabel('Normalized power [dB]');
+    % title(sprintf('Power Delay Profile - Channel ID %d', chID));
+    % grid on;
+    % legend(sprintf('Sample %d', m1),'Average over all samples');
+    % saveas(fig1, fullfile(outdir, sprintf('pdp_chID_%d.png', chID)));
 
-    fig2 = figure;
-    plot(fAxis, H_dB, 'LineWidth', 1.2);
-    xlabel('Normalized frequency');
-    ylabel('|H(f)| [dB]');
-    title(sprintf('Frequency response - Channel ID %d', chID));
-    grid on;
-    saveas(fig2, fullfile(outdir, sprintf('freqresp_chID_%d.png', chID)));
+    %% ----- 2) frequency response -----
+    H_plot = fftshift(H_est, 1);
     
+    mag_sym  = abs(H_plot(:, m1));
+    mag_mean = mean(abs(H_plot), 2);
+
+    ref = max([mag_sym; mag_mean]);
+    
+    H_sym_dB  = 20*log10(mag_sym  / ref + eps);
+    H_mean_dB = 20*log10(mag_mean / ref + eps);
+    
+    fAxis = linspace(-0.5, 0.5, N);
+    
+    fig2 = figure; hold on;
+    plot(fAxis, H_sym_dB,  'LineWidth', 1.0);
+    plot(fAxis, H_mean_dB, 'LineWidth', 1.5);
+    hold off;
+    xlabel('Normalized frequency');
+    ylabel('Normalized |H(f)| [dB]');
+    title(sprintf('Normalized frequency response - Channel ID %d', chID));
+    legend(sprintf('Symbol %d', m1), 'Mean over symbols');
+    grid on;
+
+    saveas(fig2, fullfile(outdir, sprintf('avg_freqresp_chID_%d.png', chID)));
+
+    % H_plot = fftshift(H_est); % center zero frequency 
+    % fAxis = linspace(-0.5, 0.5, Nfft_freq);
+    % 
+    % H_dB = 20*log10(abs(H_plot) + eps); 
+    % H_mean_dB = mean(H_dB, 2); % average over all symbols
+    % 
+    % fig2 = figure; hold on; 
+    % plot(fAxis, H_dB(:, m1), 'LineWidth', 1.2); 
+    % plot(fAxis, H_mean_dB, 'LineWidth', 1.2); 
+    % hold off; 
+    % xlabel('Normalized frequency'); 
+    % ylabel('|H(f)| [dB]'); 
+    % title(sprintf('Average Frequency response - Channel ID %d', chID)); 
+    % legend(sprintf('Response at Symbol %d', m1), 'Average Response'); 
+    % grid on; 
+    % saveas(fig2, fullfile(outdir, sprintf('avg_freqresp_chID_%d.png', chID)));
+
     %% ----- 3) Channel evolution over time
     fig3 = figure;
     imagesc(1:NsymTot, 1:N, abs(H_est));
