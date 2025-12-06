@@ -2,6 +2,8 @@ clear all;
 close all;
 clc;
 
+save = 0; % Set this variable to control saving of plots
+
 %% ----------------- BASE CONFIGURATION -----------------
 conf.audiosystem    = 'emulator';
 conf.emulator_idx   = 2;        % Channel ID 2 
@@ -111,7 +113,6 @@ if ~exist(outdir, 'dir')
     mkdir(outdir);
 end
 
-
 fig1 = figure;
 semilogy(1:nDataOfdmSym, BER_sym_base, '-o','LineWidth',1.2); hold on;
 semilogy(1:nDataOfdmSym, BER_sym_tr,   '-x','LineWidth',1.2);
@@ -121,7 +122,11 @@ ylabel('BER per symbol');
 title(sprintf('Channel ID = %d, SNR = %d dB (per-symbol BER)', ...
                conf.emulator_idx, conf.emulator_snr));
 legend('Task1 RX','Task2 RX','Location','best');
-saveas(fig1, fullfile(outdir, sprintf('ber_ofdm_symbol_ch%d.png', conf.emulator_idx)));
+
+if save
+    saveas(fig1, fullfile(outdir, sprintf('ber_ofdm_symbol_ch%d.png', conf.emulator_idx)));
+end
+
 %% ----------------- PLOT: Cumulative BER -----------------
 fig2 = figure;
 semilogy(1:nDataOfdmSym, BER_cum_base, '-o','LineWidth',1.2); hold on;
@@ -133,7 +138,11 @@ ylabel('Cumulative BER');
 title(sprintf('Channel ID = %d, SNR = %d dB (cumulative BER)', ...
                conf.emulator_idx, conf.emulator_snr));
 legend('Task1 RX','Task2 RX','Location','southwest');
-saveas(fig2, fullfile(outdir, sprintf('cumulative_ber_ch%d.png', conf.emulator_idx)));
+
+if save
+    saveas(fig2, fullfile(outdir, sprintf('cumulative_ber_ch%d.png', conf.emulator_idx)));
+end
+
 %% ----------------- Threshold -----------------
 th = 0.01;
 

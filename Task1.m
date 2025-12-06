@@ -2,13 +2,13 @@ clear all;
 close all;
 clc;
 
-% ----------------- CONFIGURAZIONE BASE -----------------
+% ----------------- BASE CONFIGURATION -----------------
 conf.audiosystem    = 'emulator';
-conf.emulator_idx   = 1;      % canale semplice per Task 1
+conf.emulator_idx   = 1;      % simple channel for Task 1
 conf.f_c            = 8000;
 
 % General parameters 
-conf.nbits   = 512*2*50;      % deve essere consistente con OFDM
+conf.nbits   = 512*2*50;      % must be consistent with OFDM
 conf.ofdm.bandwidth = 2000;
 conf.ofdm.ncarrier  = 512;
 conf.ofdm.cplen     = 256;
@@ -22,7 +22,7 @@ conf.sc.nsyms = 500;
 conf.f_s    = 48000;
 conf.bitsps = 16;
 
-% Calcoli derivati
+% Derived calculations
 conf.ofdm.spacing   = conf.ofdm.bandwidth/conf.ofdm.ncarrier;
 conf.sc.os_factor   = conf.f_s/conf.sc.f_sym;
 conf.ofdm.os_factor = conf.f_s/(conf.ofdm.ncarrier*conf.ofdm.spacing);
@@ -30,36 +30,36 @@ conf.ofdm.os_factor = conf.f_s/(conf.ofdm.ncarrier*conf.ofdm.spacing);
 conf.sc.txpulse_length = 20*conf.sc.os_factor;
 conf.sc.txpulse        = rrc(conf.sc.os_factor,0.22,conf.sc.txpulse_length);
 
-% Receiver mode (quello semplice per Task 1)
+% Receiver mode (the simple one for Task 1)
 conf.rx_mode = "task1";
 
-% ----------------- VETTORE DI SNR -----------------
-SNR_dB_vec = 0:1:40;      % ad esempio da 0 a 40 dB a passi di 5
+% ----------------- SNR VECTOR -----------------
+SNR_dB_vec = 0:5:40;      % for example from 0 to 40 dB in steps of 5
 BER_vec    = zeros(size(SNR_dB_vec));
 
-% Per avere risultati riproducibili
+% For reproducible results
 rng(0);
 
 for k = 1:length(SNR_dB_vec)
     conf.emulator_snr = SNR_dB_vec(k);
 
-    % ----- Genera dati casuali -----
+    % ----- Generate random data -----
     txbits = randi([0 1], conf.nbits, 1);
 
-    % ----- Trasmissione -----
+    % ----- Transmission -----
     [txsignal, conf] = txofdm(txbits, conf);
 
-    % Padding con zeri come nel template originale
+    % Padding with zeros as in the original template
     rawtxsignal = [ zeros(conf.f_s,1) ; txsignal ; zeros(conf.f_s,1) ];
     rawtxsignal = [ rawtxsignal  zeros(size(rawtxsignal)) ];
 
-    % Canale emulato
+    % Emulated channel
     rxsignal = channel_emulator(rawtxsignal(:,1), conf);
 
-    % ----- Ricezione -----
+    % ----- Reception -----
     [rxbits, conf] = rxofdm(rxsignal, conf);
 
-    % ----- Calcolo BER -----
+    % ----- BER Calculation -----
     biterrors = sum(rxbits ~= txbits);
     BER_vec(k) = biterrors/length(rxbits);
 
