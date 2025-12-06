@@ -1,4 +1,4 @@
-clear; close all; clc;
+close all; clear all; clc;
 
 % Base config
 conf.audiosystem    = 'emulator';
@@ -48,13 +48,11 @@ nOfdmSymTot    = nDataOfdmSym + 1;  % +1 Trainingssymbol
 fprintf('Number of OFDM data symbols: %d\n', nDataOfdmSym);
 
 %% ----------------- GENERATE DATA & TRANSMIT ONCE -----------------
-% txbits = randi([0 1], conf.nbits, 1);
-
-txbits = zeros(conf.nbits, 1);          % same symbol over and over
-X_pilot = (1+1j)/sqrt(2) * ones(N, conf.Nsym);
+txbits = preamble_generate(conf.nbits);     % not so random bits
+% txbits = zeros(conf.nbits, 1);
 [txsignal, conf] = txofdm(txbits, conf);
 
-% Padding wie in Task 1 / 2
+% Padding as in Task 1 / 2
 rawtxsignal = [ zeros(conf.f_s,1) ; txsignal ; zeros(conf.f_s,1) ];
 rawtxsignal = [ rawtxsignal  zeros(size(rawtxsignal)) ];
 
@@ -80,6 +78,7 @@ for chID = channelIDs
     conf.emulator_snr = SNRdB;
 
     % send signal through channel
+    rng(0);
     rxsignal = channel_emulator(rawtxsignal(:,1), conf); 
 
     % rx frontend
@@ -105,7 +104,6 @@ for chID = channelIDs
         error('Task3: start_ofdm_idx out of range (%d).', start_ofdm_idx);
     end
 
-
     ofdm_bb_os_rx = bb_rx_filt(start_ofdm_idx:end);
     ofdm_bb_rx = ofdm_rx_resampling(ofdm_bb_os_rx, conf);
     total_ofdm_len = nOfdmSymTot * (N + Ncp);
@@ -126,14 +124,14 @@ for chID = channelIDs
     % back to freq domain
     Z = fft(rxNoCP, N, 1);              
 
-    %% ----- channel estimation from training symbol -----                     
-    pilotSym = conf.ofdm.trainSymFreq;
-    X_pilot  = repmat(pilotSym, 1, NsymTot); 
-    H_est = Z ./ X_pilot;       % N x NsymTot
+    %% ----- channel estimation whole transmitted symbols                     
+    txSym = conf.ofdm.txSym;
+    H_est = Z ./ txSym;           % N x NsymTot
 
     %% ----- 1) power delay profile from H_est -----
+    m1 = 10;
     h_est = ifft(H_est, Nfft_delay);                % Nfft_delay x 1
-    pdp   = abs(h_est(:,1)).^2;
+    pdp   = abs(h_est(:, m1)).^2;
     pdp_mean = mean(abs(h_est).^2, 2);
     pdp   = pdp / max(pdp + eps);                   % normalization -> pdp is between 0..1; eps prevents division by 0
     pdp_mean = pdp_mean / max(pdp_mean + eps);
@@ -150,11 +148,11 @@ for chID = channelIDs
     ylabel('Normalized power [dB]');
     title(sprintf('Power Delay Profile - Channel ID %d', chID));
     grid on;
-    legend('First Symbol','Average over all Symbols');
+    legend(sprintf('Sample %d', m1),'Average over all samples');
     saveas(fig1, fullfile(outdir, sprintf('pdp_chID_%d.png', chID)));
 
     %% ----- 2) frequency response -----
-    H_plot   = fftshift(H_est(:,1)); % center zero frequency
+    H_plot   = fftshift(H_est(:,m1));         % center zero frequency
     fAxis    = linspace(-0.5, 0.5, Nfft_freq);
     H_dB     = 20*log10(abs(H_plot) + eps);
 

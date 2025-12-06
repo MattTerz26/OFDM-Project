@@ -106,7 +106,13 @@ for k = 1:nDataOfdmSym
 end
 
 %% ----------------- PLOT: BER PER OFDM SYMBOL -----------------
-figure;
+outdir = 'plots_task2';
+if ~exist(outdir, 'dir')
+    mkdir(outdir);
+end
+
+
+fig1 = figure;
 semilogy(1:nDataOfdmSym, BER_sym_base, '-o','LineWidth',1.2); hold on;
 semilogy(1:nDataOfdmSym, BER_sym_tr,   '-x','LineWidth',1.2);
 grid on;
@@ -115,18 +121,19 @@ ylabel('BER per symbol');
 title(sprintf('Channel ID = %d, SNR = %d dB (per-symbol BER)', ...
                conf.emulator_idx, conf.emulator_snr));
 legend('Task1 RX','Task2 RX','Location','best');
-
+saveas(fig1, fullfile(outdir, sprintf('ber_ofdm_symbol_ch%d.png', conf.emulator_idx)));
 %% ----------------- PLOT: Cumulative BER -----------------
-figure;
+fig2 = figure;
 semilogy(1:nDataOfdmSym, BER_cum_base, '-o','LineWidth',1.2); hold on;
 semilogy(1:nDataOfdmSym, BER_cum_tr,   '-x','LineWidth',1.2);
+yline(0.01, '--', 1.2);
 grid on;
 xlabel('Number of OFDM data symbols used (from start)');
 ylabel('Cumulative BER');
 title(sprintf('Channel ID = %d, SNR = %d dB (cumulative BER)', ...
                conf.emulator_idx, conf.emulator_snr));
-legend('Task1 RX','Task2 RX','Location','best');
-
+legend('Task1 RX','Task2 RX','Location','southwest');
+saveas(fig2, fullfile(outdir, sprintf('cumulative_ber_ch%d.png', conf.emulator_idx)));
 %% ----------------- Threshold -----------------
 th = 0.01;
 
@@ -134,13 +141,13 @@ idx_good_base = find(BER_cum_base < th);
 idx_good_tr   = find(BER_cum_tr   < th);
 
 if ~isempty(idx_good_base)
-    fprintf('Base RX: BER cum < %.2f fino al simbolo OFDM #%d\n', th, max(idx_good_base));
+    fprintf('Base RX: BER cum < %.2f up to OFDM symbol #%d\n', th, max(idx_good_base));
 else
-    fprintf('Base RX: BER cum < %.2f mai raggiunta\n', th);
+    fprintf('Base RX: BER cum < %.2f never reached\n', th);
 end
 
 if ~isempty(idx_good_tr)
-    fprintf('Tracking RX: BER cum < %.2f fino al simbolo OFDM #%d\n', th, max(idx_good_tr));
+    fprintf('Tracking RX: BER cum < %.2f up to OFDM symbol #%d\n', th, max(idx_good_tr));
 else
-    fprintf('Tracking RX: BER cum < %.2f mai raggiunta\n', th);
+    fprintf('Tracking RX: BER cum < %.2f never reached\n', th);
 end

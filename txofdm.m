@@ -29,9 +29,10 @@ function [txsignal, conf] = txofdm(txbits,conf)
     
     % Save in conf train symbol to use it in RX
     conf.ofdm.trainSymFreq = trainSymFreq;
-    
+
     % Append training symbol to the OFDM symbols
     ofdmSymbols = [trainSymFreq, ofdmSymbols]; % Prepend training symbol
+    conf.ofdm.txSym = ofdmSymbols;             % Used for task 3
     nOfdmSym = nOfdmSym + 1; % Update the number of OFDM symbols
     
     % IFFT + CP insertion
@@ -64,17 +65,18 @@ function [txsignal, conf] = txofdm(txbits,conf)
     preamble_bb = conv(bpsk_up, conf.sc.txpulse);
     conf.sc.preamble_bb = preamble_bb;
     %plot(preamble_bb)
-
-    %Mean Power 
+    
+    %% TO DO: FIX NORMALIZATION
+    % Mean Power 
     P_preamble = mean(abs(preamble_bb).^2);
     P_ofdm = mean(abs(ofdm_bb_os).^2);
     
-    %Normalization
+    % Normalization
     P0 = 1; 
     alpha_pre  = sqrt(P0 / P_preamble);
     alpha_ofdm = sqrt(P0 / P_ofdm);
     preamble_bb_norm = alpha_pre  * preamble_bb;
-    %conf.sc.preamble_bb = preamble_bb_norm;
+    % conf.sc.preamble_bb = preamble_bb_norm;
     ofdm_bb_os_norm  = alpha_ofdm * ofdm_bb_os;
 
     % Concatenate preamble and OFDM basebande
