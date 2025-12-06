@@ -74,6 +74,6 @@ yline(0.01, '-w');
 grid on;
 xlabel('SNR [dB]');
 ylabel('BER');
-title('BER vs SNR (emulator idx 1)');
+title('BER vs SNR - Channel ID 1');
 % save picture
-saveas(gcf, 'ber_vs_snr_task1.png');
+% saveas(gcf, 'ber_vs_snr_task1.png');
