@@ -1,4 +1,4 @@
-function [ofdm_samples] = ofdm_tx_resampling(ofdm_samples_os,conf)
+function [ofdm_samples] = ofdm_rx_resampling(ofdm_samples_os,conf)
 %OFDM_TX_RESAMPLING resample the OFDM signal sampled at conf.f_s  
 % to match the target sampling rate (conf.ofdm.ncarrier*conf.ofdm.spacing)
 %

@@ -2,6 +2,7 @@
 % Wireless Receivers: algorithms and architectures
 % Audio Transmission Framework 
 
+clc;
 clear all;
 close all;
 
@@ -17,10 +18,11 @@ conf.rx_mode = "task2";
 
 %Emulator configuration
 conf.emulator_idx = 2; % 1 to 5 yields different channels
-conf.emulator_snr = 100;
+conf.emulator_snr = 20;
 
 % General parameters 
-conf.nbits   = 512*2*50;  % number of bits 
+OFDMnSyms = 50;
+conf.nbits   = 512*2*OFDMnSyms;  % number of bits 
 conf.f_c     = 8000;
 
 % Preamble

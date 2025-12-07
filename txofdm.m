@@ -65,26 +65,39 @@ function [txsignal, conf] = txofdm(txbits,conf)
     preamble_bb = conv(bpsk_up, conf.sc.txpulse);
     conf.sc.preamble_bb = preamble_bb;
     %plot(preamble_bb)
-    
-    %% TO DO: FIX NORMALIZATION
-    % Mean Power 
-    P_preamble = mean(abs(preamble_bb).^2);
-    P_ofdm = mean(abs(ofdm_bb_os).^2);
-    
-    % Normalization
-    P0 = 1; 
-    alpha_pre  = sqrt(P0 / P_preamble);
-    alpha_ofdm = sqrt(P0 / P_ofdm);
-    preamble_bb_norm = alpha_pre  * preamble_bb;
-    % conf.sc.preamble_bb = preamble_bb_norm;
-    ofdm_bb_os_norm  = alpha_ofdm * ofdm_bb_os;
 
-    % Concatenate preamble and OFDM basebande
-    tx_baseband = [preamble_bb; ofdm_bb_os];
+    % NORMALIZATION 
+    % Average powers
+    P_preamble = mean(abs(preamble_bb).^2);
+    P_ofdm     = mean(abs(ofdm_bb_os).^2);
     
-    % Mix the signal with the carrier frequency
+    % Scaling factors to have Average Power = 1
+    scale_pre  = 1 / sqrt(P_preamble);
+    scale_ofdm = 1 / sqrt(P_ofdm);
+    
+    % Apply normalization
+    preamble_norm = preamble_bb * scale_pre;
+    ofdm_norm     = ofdm_bb_os * scale_ofdm;
+
+    % IMPORTANT: Save the normalized preamble in the config
+    conf.sc.preamble_bb = preamble_norm;
+
+    tx_baseband = [preamble_norm; ofdm_norm];
+    
+    % Upconversion
     n = (0:length(tx_baseband)-1).';
     audio_carrier = exp(1j*2*pi*fc*n/fs_audio);
-    passband = real(tx_baseband .* audio_carrier);
-    txsignal = passband / (max(abs(passband)) + 1e-12) * 0.9;
+    passband_signal = real(tx_baseband .* audio_carrier);
+
+    % Final Scaling to avoid audio clipping
+    % Normalize so that the maximum peak is 0.9
+    max_val = max(abs(passband_signal));
+    
+    % Protection to avoid division by zero if the signal is null
+    if max_val == 0
+        txsignal = passband_signal;
+    else
+        txsignal = (passband_signal / max_val) * 0.9;
+    end
+
 end

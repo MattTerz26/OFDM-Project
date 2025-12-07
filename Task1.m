@@ -1,6 +1,7 @@
 clear all;
 close all;
 clc;
+save  = 0;
 
 % ----------------- BASE CONFIGURATION -----------------
 conf.audiosystem    = 'emulator';
@@ -75,5 +76,8 @@ grid on;
 xlabel('SNR [dB]');
 ylabel('BER');
 title('BER vs SNR - Channel ID 1');
+
 % save picture
-% saveas(gcf, 'ber_vs_snr_task1.png');
+if save
+    saveas(gcf, 'ber_vs_snr_task1.png');
+end
