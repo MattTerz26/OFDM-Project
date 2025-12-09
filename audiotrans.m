@@ -11,22 +11,22 @@ close all;
 % Options for transmission are : 
 % emulator: use a channel emulator with 5 different configurations.
 % audio: use the loudspeaker and microphone for the data transmission
-conf.audiosystem = 'audio'; 
+conf.audiosystem = 'emulator'; 
 
 % Task reciever selection
 conf.rx_mode = "task2";
 
 %Emulator configuration
 conf.emulator_idx = 2; % 1 to 5 yields different channels
-conf.emulator_snr = 20;
+conf.emulator_snr = 30;
 
 % General parameters 
-OFDMnSyms = 10;
+OFDMnSyms = 20;
 conf.nbits   = 512*2*OFDMnSyms;  % number of bits 
-conf.f_c     = 8000;
+conf.f_c     = 6000;
 
 % Preamble
-conf.sc.f_sym = 1000;  % symbol rate
+conf.sc.f_sym = 100;  % symbol rate
 conf.sc.nsyms = 500;   % number of preamble symbols
 
 %OFDM
@@ -76,6 +76,7 @@ switch(conf.audiosystem)
        
         txdur       = length(rawtxsignal)/conf.f_s; % calculate length of transmitted signal
         audiowrite('out.wav',rawtxsignal,conf.f_s)
+        
         disp('MATLAB generic');
         playobj = audioplayer(rawtxsignal,conf.f_s,conf.bitsps);
         recobj  = audiorecorder(conf.f_s,conf.bitsps,1);

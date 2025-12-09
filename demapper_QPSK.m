@@ -1,19 +1,27 @@
 function b = demapper_QPSK(symbols)
-% QPSK = [1+1j, -1+1j, -1-1j, 1-1j] / sqrt(2)
-% bits → symbol:
-%   00 ->  1+1j
-%   01 -> -1+1j
-%   10 -> -1-1j
-%   11 ->  1-1j
+% demapper_QPSK - Demodulates QPSK symbols to binary representation.
+%
+% Syntax:  b = demapper_QPSK(symbols)
+%
+% Inputs:
+%    symbols - A vector of complex QPSK symbols (1 + 1j, 1 - 1j, -1 + 1j, -1 - 1j)
+%
+% Outputs:
+%    b - A binary vector representing the demapped bits, where:
+%        [ 1 + 1j] -> [0 0]
+%        [ 1 - 1j] -> [0 1]
+%        [-1 + 1j] -> [1 0]
+%        [-1 - 1j] -> [1 1]
+%
+% Example:
+%    b = demapper_QPSK([1 + 1j, -1 - 1j]);
 
-    sym = symbols(:);       % col
-
-    sR = real(sym) < 0;
-    sI = imag(sym) < 0;
-
-    bit1 = sI;
-    bit2 = xor(sR, sI);
-
-    B = [bit1 bit2].';      % 2 x Ns
-    b = B(:);               % (2*Ns) x 1
+    sym = symbols(:);       % Ensure symbols are in column format
+    
+    % Determine the binary values based on the real and imaginary parts
+    b0 = real(sym) < 0;     % First bit based on the real part
+    b1 = imag(sym) < 0;     % Second bit based on the imaginary part
+    
+    B = [b0 b1].';          % Create a 2 x Ns matrix
+    b = B(:);               % Reshape to (2*Ns) x 1 vector
 end

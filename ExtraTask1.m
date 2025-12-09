@@ -1,13 +1,12 @@
 close all; clear all; clc;
 
 %% ===================== SYSTEM CONFIG ============================
+packet_version = 2;
+
+% Emulator configuration
 conf.audiosystem = 'emulator';
-
-conf.rx_mode = "task2";
-
-%Emulator configuration
 conf.emulator_idx = 2;
-conf.emulator_snr = 20;
+conf.emulator_snr = 100;
 
 % General Parameters
 conf.f_c   = 8000;
@@ -21,7 +20,8 @@ conf.ofdm.bandwidth = 2000;
 conf.ofdm.ncarrier  = 512;
 conf.ofdm.cplen     = 256;
 conf.modulation_order = 2;
-conf.ofdm.OFDMnSyms = 50;
+conf.ofdm.OFDMnSyms = 20;
+conf.ofdm.train_period = 20;    % How many OFDM symbols per packet
 
 % Audio settings
 conf.f_s = 48000;
@@ -45,7 +45,7 @@ rng(0);
 
 
 %% ===================== LOAD IMAGE ============================
-img_tx = imread("img.png");   % grayscale image (uint8)
+img_tx = imread("img2.png");   % grayscale image (uint8)
 [H, W] = size(img_tx);
 
 tx_bits = image_encoder(img_tx);
@@ -69,7 +69,28 @@ fprintf("Image: %d x %d  →  %d bits\n", H, W, nbits);
 %% ===================== TRANSMISSION ============================
 disp('Start OFDM Transmission')
 
-[rx_bits, conf] = audiotrans_packets(tx_bits, conf);
+switch packet_version
+    case 1
+        disp('Packet version 1 selected: ( p + training + data ) for N times');
+        conf.rx_mode = "task2";         % Uses old reciever and transmitter 
+        [rx_bits, conf] = audiotrans_packets(tx_bits, conf);
+    case 2
+        disp('Packet version 2 selected: (p + train + data1 + train + data2 ...)');
+        conf.rx_mode = "extratask1";
+        conf.tx_mode = "extratask1";
+        [txsignal, conf] = txofdm(tx_bits, conf);
+        rawtx = [zeros(conf.f_s,1); txsignal; zeros(conf.f_s,1)];
+        rawtx = [rawtx zeros(size(rawtx))];
+
+        % --- CHANNEL ---
+        rx = channel_emulator(rawtx(:,1), conf);
+
+        % --- RX ---
+        [rx_bits, conf] = rxofdm(rx, conf);         % rx_mode extratask1
+    otherwise   
+        disp('Warning: Unsupported packet version. Please check the configuration.');
+end
+
 
 %% ===================== BER ================================
 rx_bits = rx_bits(1:nbits);
@@ -81,7 +102,7 @@ BER = sum(tx_bits(1:L) ~= rx_bits(1:L)) / L;
 fprintf("BER = %.6f\n", BER);
 
 %% ===================== IMAGE DECODING =====================
-img_rx = image_decoder(rx_bits(1:8*H*W), [H W]);
+img_rx = image_decoder(rx_bits, [H W]);
 
 figure;
 subplot(1,2,1); imshow(img_tx); title("TX Image");

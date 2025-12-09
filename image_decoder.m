@@ -24,7 +24,7 @@ function img = image_decoder(bits, image_size)
     end
     
     % Reshape bits into [Npix x 8]
-    bits = reshape(bits, Npix, 8);
+    bits = reshape(bits, 8, Npix);
     
     % Convert to decimal uint8
     pixels = bit2int(bits, 8);

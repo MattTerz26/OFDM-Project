@@ -69,6 +69,7 @@ function rxbits = rx_task1(rxsignal, conf)
     % Low-pass filtering (extract baseband) - Time domain
     bb_rx_filt = ofdmlowpass(bb_rx, conf, conf.ofdm.bandwidth);
 
+
     % filtering for preamble
     rx_filt_p_det = lowpass(real(bb_rx), 2000, conf.f_s);
     
@@ -156,7 +157,7 @@ function rxbits = rx_task2(rxsignal, conf)
     % Low-pass filtering (extract baseband) - Time domain
     bb_rx_filt = ofdmlowpass(bb_rx, conf, conf.ofdm.bandwidth);
     
-    beginning_of_data = frame_sync_ofdm_fast(bb_rx_filt, conf);        
+    beginning_of_data = frame_sync_ofdm_fast(bb_rx_filt, conf);         % NEW PREAMBLE DETECTOR
 
     start_ofdm_idx = beginning_of_data + 1;
 
@@ -271,11 +272,8 @@ function [rxbits, conf] = rx_extratask1(rxsignal, conf)
     % Low-pass filtering
     bb_rx_filt = ofdmlowpass(bb_rx, conf, conf.ofdm.bandwidth);
    
-    % filtering for preamble
-    rx_filt_p_det = lowpass(real(bb_rx_filt), 2000, conf.f_s);
-
     % Frame synchronization
-    beginning = frame_sync_ofdm_fast(rx_filt_p_det, conf);
+    beginning = frame_sync_ofdm_fast(bb_rx_filt, conf);
     start_ofdm_idx = beginning + 1;
 
     if start_ofdm_idx < 1 || start_ofdm_idx > length(bb_rx_filt)
@@ -313,7 +311,7 @@ function [rxbits, conf] = rx_extratask1(rxsignal, conf)
     
     % Initialize estimation
     H_est = [];                          % Channel estimate
-    theta_hat = zeros(N,nSym+1);          % Per-subcarrier phase
+    theta_hat = zeros(N,+1);          % Per-subcarrier phase
     alpha = 1;                    % Smoothing factor for tracking
     
     rxbits = [];
@@ -324,8 +322,8 @@ function [rxbits, conf] = rx_extratask1(rxsignal, conf)
         if isTrain(k)
             % Channel update
             H_est = Z(:,k) ./ trainSym;
-            theta_hat(:,k) = 0;      % Reset phase tracker at training
-            % fprintf('Processed training symbol %d\n', k);
+            theta_hat(:) = 0;      % Reset phase tracker at training
+            fprintf('Processed training symbol %d\n', k);
             continue;
         end
         
@@ -342,17 +340,17 @@ function [rxbits, conf] = rx_extratask1(rxsignal, conf)
         candidates = baseTheta + pi/2 * (-1:4);
         
         % Find the closest candidate for each subcarrier
-        [~, idx] = min(abs(candidates - theta_hat(:, k-1)), [], 2);
+        [~, idx] = min(abs(candidates - theta_hat), [], 2);
         theta_raw = candidates(idx);
         
         % IIR filter
-        theta_hat(:, k) = mod(alpha * theta_raw + (1 - alpha) * theta_hat(:, k-1), 2 * pi);
+        theta_hat = mod(alpha * theta_raw + (1 - alpha) * theta_hat, 2 * pi);
         
         % Correction
-        Y_corr = Y .* exp(-1j * theta_hat(:, k));
+        Y_corr = Y .* exp(-1j * theta_hat);
         
         % Demapping
-        bits_hat = demapper_QPSK(Y_corr(:));
+        bits_hat = demapper_QPSK(Y_corr);
         rxbits = [rxbits ; bits_hat];
         
         fprintf('Processed OFDM symbol %d\n', k);

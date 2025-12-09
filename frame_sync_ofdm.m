@@ -7,6 +7,7 @@ function beginning_of_data = frame_sync_ofdm(rx_bb, conf)
 
     p  = conf.sc.preamble_bb(:);
     Lp = length(p);
+    L_rx = length(rx_bb);
     rx = rx_bb(:);
 
     if length(rx) < Lp
@@ -15,7 +16,7 @@ function beginning_of_data = frame_sync_ofdm(rx_bb, conf)
 
     % Fast correlation (equivalent to sliding the window)
     c = filter(conj(flipud(p)), 1, rx);               % correlation
-    pow_rx = abs(rx_bb).^2;
+    pow_rx = abs(rx).^2;
     win    = ones(Lp,1);
     e = filter(win, 1, pow_rx);      % e(i) = sum |rx_bb(i-Lp+1:i)|^2
     
