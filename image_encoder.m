@@ -15,7 +15,7 @@ function bits = image_encoder(img)
     pixels = img(:);
     
     % Convert each pixel to 8-bit binary
-    bits = int2bit(pixels.', 8);
+    bits = double(int2bit(pixels.', 8));
 
     % Return as a single column vector
     bits = bits(:);

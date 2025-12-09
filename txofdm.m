@@ -28,7 +28,7 @@ function [txsignal, conf] = txofdm(txbits, conf)
             [txsignal, conf] = tx_extratask1(txbits, conf);
 
         otherwise
-            error("txofdm: Unknown receiver mode '%s'", conf.tx_mode); % Error for unknown mode
+            error("txofdm: Unknown transmitter mode '%s'", conf.tx_mode); % Error for unknown mode
     end
 end
 

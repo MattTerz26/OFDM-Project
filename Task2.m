@@ -7,10 +7,10 @@ save = 0; % Set this variable to control saving of plots
 %% ----------------- BASE CONFIGURATION -----------------
 conf.audiosystem    = 'emulator';
 conf.emulator_idx   = 2;        % Channel ID 2 
-conf.emulator_snr   = 20;      % Let's start with 100 dB
+conf.emulator_snr   = 100;      % Let's start with 100 dB
 
 % General parameters 
-conf.nbits   = 512*2*50;       
+conf.nbits   = 500*2*20;       
 conf.f_c     = 8000;           
 
 % Single-carrier preamble
@@ -19,8 +19,8 @@ conf.sc.nsyms = 500;
 
 % OFDM
 conf.ofdm.bandwidth = 2000;    
-conf.ofdm.ncarrier  = 512;     
-conf.ofdm.cplen     = 256;     
+conf.ofdm.ncarrier  = 500;     
+conf.ofdm.cplen     = 250;     
 conf.modulation_order = 2;     
 
 % Audio
@@ -50,7 +50,12 @@ nDataOfdmSym = conf.nbits / bitsPerOfdmSymbol;
 fprintf('Number of OFDM data symbols: %d\n', nDataOfdmSym);
 
 %% ----------------- GENERATE DATA & TRANSMIT -----------------
-txbits = randi([0 1], conf.nbits, 1);
+% txbits = randi([0 1], conf.nbits, 1);
+img_tx = imread("img2.png");   % grayscale image (uint8)
+[H, W] = size(img_tx);
+
+txbits = double(image_encoder(img_tx));
+nbits2 = length(txbits);
 
 [txsignal, conf] = txofdm(txbits, conf);
 

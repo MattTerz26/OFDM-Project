@@ -314,7 +314,7 @@ function [rxbits, conf] = rx_extratask1(rxsignal, conf)
     % Initialize estimation
     H_est = [];                          % Channel estimate
     theta_hat = zeros(N,nSym+1);          % Per-subcarrier phase
-    alpha = 1;                    % Smoothing factor for tracking
+    alpha = 0.01;                    % Smoothing factor for tracking
     
     rxbits = [];
     

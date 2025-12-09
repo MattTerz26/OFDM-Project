@@ -1,12 +1,12 @@
 close all; clear all; clc;
 
 %% ===================== SYSTEM CONFIG ============================
-packet_version = 2;
+packet_version = 2 ;
 
 % Emulator configuration
 conf.audiosystem = 'emulator';
 conf.emulator_idx = 2;
-conf.emulator_snr = 100;
+conf.emulator_snr = 30;
 
 % General Parameters
 conf.f_c   = 8000;
@@ -21,7 +21,7 @@ conf.ofdm.ncarrier  = 512;
 conf.ofdm.cplen     = 256;
 conf.modulation_order = 2;
 conf.ofdm.OFDMnSyms = 20;
-conf.ofdm.train_period = 20;    % How many OFDM symbols per packet
+conf.ofdm.train_period = 5;    % How many OFDM symbols per packet
 
 % Audio settings
 conf.f_s = 48000;
@@ -45,7 +45,7 @@ rng(0);
 
 
 %% ===================== LOAD IMAGE ============================
-img_tx = imread("img2.png");   % grayscale image (uint8)
+img_tx = imread("img.png");   % grayscale image (uint8)
 [H, W] = size(img_tx);
 
 tx_bits = image_encoder(img_tx);
