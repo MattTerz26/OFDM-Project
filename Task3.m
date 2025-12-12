@@ -10,10 +10,10 @@ conf.audiosystem    = 'emulator';
 conf.emulator_idx   = 2;        
 conf.emulator_snr   = 25;
 
-conf.nbits   = 512*2*50;       
 conf.f_c     = 8000;
-conf.Nsym    = 50;
+conf.Nsym    = 100;
 NsymTot      = conf.Nsym + 1;   % + training symbol
+conf.nbits   = 512*2*conf.Nsym;   
 
 % SC preamble
 conf.sc.f_sym = 1000;          
@@ -123,13 +123,12 @@ for chID = channelIDs
 
     H_est = Z ./ conf.ofdm.txSym;
     
-    %% PDP
-    
+    %% PDP  
     h_est = ifft(H_est, Nfft_delay, 1);
-    m1 = 10;
+    m1 = 10;      % m1 is a symbol
 
-    pdp       = abs(h_est(:,m1)).^2;
-    pdp_mean  = mean(abs(h_est).^2,2);
+    pdp       = abs(h_est(:, m1)).^2;
+    pdp_mean  = mean(abs(h_est).^2, 2);
     pdp       = pdp / max(pdp);
     pdp_mean  = pdp_mean / max(pdp_mean);
     pdp_dB      = 10*log10(pdp + eps);
@@ -141,9 +140,11 @@ for chID = channelIDs
     L_eff  = idx_sig(end);
 
     fprintf("Effective Length L_eff = %d taps\n", L_eff);
-
+    
     fig1 = figure; hold on;
-    plot(pdp_dB); plot(pdp_mean_dB,'LineWidth',2);
+
+    plot(pdp_dB); 
+    plot(pdp_mean_dB,'LineWidth', 2);
     yline(thr_dB,'--');
     title(sprintf("PDP – Channel %d", chID));
     xlabel("Tap index"); ylabel("Power [dB]");
@@ -151,7 +152,6 @@ for chID = channelIDs
     grid on;
 
     %% FREQUENCY RESPONSE
-
     H_plot = fftshift(H_est,1);
     mag_sym  = abs(H_plot(:,m1));
     mag_mean = mean(abs(H_plot),2);
@@ -170,7 +170,6 @@ for chID = channelIDs
     legend("Symbol 10","Mean");
     
     %% CHANNEL EVOLUTION
-    
     fig3 = figure;
     imagesc(abs(H_est));
     axis xy;
@@ -178,29 +177,30 @@ for chID = channelIDs
     title(sprintf("Channel Evolution |H(m,n)| – Ch %d", chID));
     colorbar;
 
-    %% SUB CARRIER CHANNEL EVOLUTION
-    m0 = floor(N/2) + 1;   % haf band subcarrier
     
+    %% PHASE EVOLUTION
+    m0 = 50;
+    fig5 = figure;
+    plot(1:NsymTot, unwrap(angle(H_est(m0,:))), '-o');
+    grid on;
+    xlabel('OFDM symbol index n');
+    ylabel('angle(H(m_0,n)) [rad]');
+    title(sprintf('Phase evolution, m_0 = %d - Channel ID %d', m0, chID));
+
+    %% SUB CARRIER CHANNEL EVOLUTION
     fig4 = figure;
-    subplot(2,1,1);
     plot(1:NsymTot, abs(H_est(m0,:)), '-o');
     grid on;
     xlabel('OFDM symbol index n');
     ylabel('|H(m_0,n)|');
     title(sprintf('Time evolution in amplitude, m_0 = %d - Channel ID %d', m0, chID));
-    
-    subplot(2,1,2);
-    plot(1:NsymTot, unwrap(angle(H_est(m0,:))), '-o');
-    grid on;
-    xlabel('OFDM symbol index n');
-    ylabel('angle(H(m_0,n)) [rad]');
-    title(sprintf('Time evolution in phase, m_0 = %d - Channel ID %d', m0, chID));
-
+  
     %% SAVE PLOTS
     if save
         saveas(fig1, fullfile(outdir, sprintf('pdp_chID_%d.png', chID)));
         saveas(fig2, fullfile(outdir, sprintf('avg_freqresp_chID_%d.png', chID)));
         saveas(fig3, fullfile(outdir, sprintf('channel_time_ev_%d.png', chID)));
         saveas(fig4, fullfile(outdir, sprintf('channel_time_ev_detail_%d.png', chID)));
+        saveas(fig5, fullfile(outdir, sprintf('phase_ev_chID_%d.png', chID)));
     end
 end

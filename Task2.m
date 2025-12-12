@@ -7,10 +7,10 @@ save = 0; % Set this variable to control saving of plots
 %% ----------------- BASE CONFIGURATION -----------------
 conf.audiosystem    = 'emulator';
 conf.emulator_idx   = 2;        % Channel ID 2 
-conf.emulator_snr   = 100;      % Let's start with 100 dB
+conf.emulator_snr   = 10;      % Let's start with 100 dB
 
 % General parameters 
-conf.nbits   = 500*2*20;       
+conf.nbits   = 500*2*50;       
 conf.f_c     = 8000;           
 
 % Single-carrier preamble
@@ -50,12 +50,7 @@ nDataOfdmSym = conf.nbits / bitsPerOfdmSymbol;
 fprintf('Number of OFDM data symbols: %d\n', nDataOfdmSym);
 
 %% ----------------- GENERATE DATA & TRANSMIT -----------------
-% txbits = randi([0 1], conf.nbits, 1);
-img_tx = imread("img2.png");   % grayscale image (uint8)
-[H, W] = size(img_tx);
-
-txbits = double(image_encoder(img_tx));
-nbits2 = length(txbits);
+txbits = randi([0 1], conf.nbits, 1);
 
 [txsignal, conf] = txofdm(txbits, conf);
 
@@ -77,6 +72,7 @@ end
 %% ----------------- RX TRACKING (task2_phase) -----------------
 conf_tr = conf;
 conf_tr.rx_mode = "task2";
+conf_tr.ofdm.alpha = 1;
 
 [rxbits_tr, conf_tr] = rxofdm(rxsignal, conf_tr);
 
@@ -164,4 +160,45 @@ if ~isempty(idx_good_tr)
     fprintf('Tracking RX: BER cum < %.2f up to OFDM symbol #%d\n', th, max(idx_good_tr));
 else
     fprintf('Tracking RX: BER cum < %.2f never reached\n', th);
+end
+
+%% ----------------- RX TRACKING Alpha comparison -----------------
+alpha_values = 0:0.1:1; % Define alpha values from 0 to 1 with a step of 0.1
+nAlpha = length(alpha_values);
+BER_cum_tr_alpha = zeros(nAlpha, nDataOfdmSym); % Initialize cumulative BER for each alpha
+
+for a = 1:nAlpha
+    conf_tr = conf;
+    conf_tr.rx_mode = "task2";
+    conf_tr.ofdm.alpha = alpha_values(a); % Set the current alpha value
+
+    [rxbits_tr, conf_tr] = rxofdm(rxsignal, conf_tr);
+
+    if length(rxbits_tr) ~= length(txbits)
+        error('Length mismatch (tracking): rxbits=%d, txbits=%d', length(rxbits_tr), length(txbits));
+    end
+
+    % Calculate cumulative BER for the current alpha
+    for k = 1:nDataOfdmSym
+        BER_cum_tr_alpha(a, k) = mean(rxbits_tr(1:k*bitsPerOfdmSymbol) ~= txbits(1:k*bitsPerOfdmSymbol));
+    end
+end
+
+%% ----------------- PLOT: Cumulative BER for different alpha values -----------------
+fig3 = figure;
+hold on;
+for a = 1:nAlpha
+    semilogy(1:nDataOfdmSym, BER_cum_tr_alpha(a, :), '-o', 'LineWidth', 1.2, 'DisplayName', sprintf('Alpha = %.1f', alpha_values(a)));
+end
+yline(0.01, '--', '1% BER');
+set(gca, 'YScale', 'log');
+grid on;
+xlabel('Number of OFDM data symbols used (from start)');
+ylabel('Cumulative BER');
+title(sprintf('Cumulative BER vs N-Symbol for different alpha values (Channel ID = %d, SNR = %d dB)', ...
+               conf.emulator_idx, conf.emulator_snr));
+legend('Location', 'southeast');
+
+if save
+    saveas(fig3, fullfile(outdir, sprintf('cumulative_ber_alpha_ch%d.png', conf.emulator_idx)));
 end

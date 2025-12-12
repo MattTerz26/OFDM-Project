@@ -2,7 +2,7 @@
 % Wireless Receivers: algorithms and architectures
 % Audio Transmission Framework 
 
-clc;
+% clc;
 clear all;
 close all;
 
@@ -11,17 +11,18 @@ close all;
 % Options for transmission are : 
 % emulator: use a channel emulator with 5 different configurations.
 % audio: use the loudspeaker and microphone for the data transmission
-conf.audiosystem = 'emulator'; 
+conf.audiosystem = 'emulator';
+conf.ofdm.alpha = 1;
 
 % Task reciever selection
 conf.rx_mode = "task2";
 
 %Emulator configuration
 conf.emulator_idx = 2; % 1 to 5 yields different channels
-conf.emulator_snr = 30;
+conf.emulator_snr = 15;
 
 % General parameters 
-OFDMnSyms = 20;
+OFDMnSyms = 40;
 conf.nbits   = 512*2*OFDMnSyms;  % number of bits 
 conf.f_c     = 6000;
 

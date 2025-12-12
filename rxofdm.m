@@ -31,13 +31,13 @@ function [rxbits, conf] = rxofdm(rxsignal, conf)
 
     switch string(conf.rx_mode)
         case "task1"
-            rxbits = rx_task1(rxsignal, conf);
+            [rxbits, conf] = rx_task1(rxsignal, conf);
 
         case "task2"
-            rxbits = rx_task2(rxsignal, conf);
+            [rxbits, conf] = rx_task2(rxsignal, conf);
 
         case "extratask1"
-            rxbits = rx_extratask1(rxsignal, conf);
+            [rxbits, conf] = rx_extratask1(rxsignal, conf);
 
         otherwise
             error("rxofdm: Unknown receiver mode '%s'", conf.rx_mode);
@@ -47,7 +47,7 @@ end
 %% ==================================================================
 %  Receiver for Task 1: simplest OFDM receiver (no phase tracking)
 %  ==================================================================
-function rxbits = rx_task1(rxsignal, conf)
+function [rxbits, conf] = rx_task1(rxsignal, conf)
 
     % Useful constants
     bitsPerSym   = conf.modulation_order;       % 2 for QPSK
@@ -134,7 +134,7 @@ end
 %% ==================================================================
 %  Receiver for Task 2: phase tracking
 % ===================================================================
-function rxbits = rx_task2(rxsignal, conf)
+function [rxbits, conf]  = rx_task2(rxsignal, conf)
 
     % Useful constants
     bitsPerSym   = conf.modulation_order;       % 2 for QPSK
@@ -204,9 +204,16 @@ function rxbits = rx_task2(rxsignal, conf)
     Y  = Z_data ./ H_mat;          % estimated QPSK symbols in freq
     
     % Phase tracking and phase correction
+    
+    if ~isfield(conf.ofdm, 'alpha')
+        alpha = 1;  % Default value if alpha is not defined
+    else
+        alpha = conf.ofdm.alpha;  % IIR filter coefficient
+    end
+
     theta_hat = zeros(N, nDataSym+1);
-    alpha = 1;                 % IIR filter coefficient
     theta_hat(:, 1) = 0;
+
     Y_corr = zeros(size(Y));
     
     for n = 1:nDataSym      % looping through OFDM data symbols
@@ -219,12 +226,14 @@ function rxbits = rx_task2(rxsignal, conf)
         % closest candidate
         [~, idx] = min(abs(candidates - theta_hat(:, n)), [], 2);
         theta_raw = candidates(sub2ind(size(candidates), (1:N).', idx(:))); % vectorized indexing
-        
+
         % IIR filter
-        theta_hat(:, n+1) = mod(alpha*theta_raw + (1-alpha)*theta_hat(:, n), 2*pi);
-        
+        theta_hat(:, n+1) = alpha*theta_raw + (1-alpha)*theta_hat(:, n);
+        theta_hat(:, n+1) = mod(theta_hat(:, n+1), 2*pi);
+
         % final correction
         Y_corr(:,n) = y .* exp(-1j*theta_hat(:, n+1));
+
     end
     
     A_hat = Y_corr(:);
@@ -312,50 +321,62 @@ function [rxbits, conf] = rx_extratask1(rxsignal, conf)
     isTrain = abs(corr_train) > 0.7 * max(abs(corr_train));
     
     % Initialize estimation
-    H_est = [];                          % Channel estimate
-    theta_hat = zeros(N,nSym+1);          % Per-subcarrier phase
-    alpha = 0.01;                    % Smoothing factor for tracking
+    % --- INITIALIZATION ---
+    H_est_amp = [];                 % amplitude-only channel estimate
+    theta_hat = zeros(N,1);         % per-carrier tracked phase
+    haveH     = false;
+    
+    alpha = 0.90;                   % smoothing for data symbols
     
     rxbits = [];
     
-    % Loop over symbols
+    % --- SYMBOL LOOP ---
     for k = 1:nSym
         
+        % ===== TRAINING SYMBOL =====
         if isTrain(k)
-            % Channel update
-            H_est = Z(:,k) ./ trainSym;
-            theta_hat(:,k) = 0;      % Reset phase tracker at training
-            % fprintf('Processed training symbol %d\n', k);
+            % Estimate channel (complex)
+            H_temp = Z(:,k) ./ trainSym;
+    
+            % Amplitude-only channel estimate
+            H_est_amp = abs(H_temp);
+    
+            % Initialize per-carrier phase tracker
+            theta_hat = angle(H_temp);    % N×1
+    
+            fprintf("Processed training symbol %d\n",k);
             continue;
         end
-        
-        if isempty(H_est)
-            % Skip symbols before first training
-            continue;
-        end
-        
-        % Equalization
-        Y = Z(:,k) ./ H_est;
-        
-        % Viterbi-Viterbi phase tracking        
-        baseTheta = 0.25 * angle(-Y.^4);
-        candidates = baseTheta + pi/2 * (-1:4);
-        
-        % Find the closest candidate for each subcarrier
-        [~, idx] = min(abs(candidates - theta_hat(:, k-1)), [], 2);
-        theta_raw = candidates(idx);
-        
-        % IIR filter
-        theta_hat(:, k) = mod(alpha * theta_raw + (1 - alpha) * theta_hat(:, k-1), 2 * pi);
-        
-        % Correction
-        Y_corr = Y .* exp(-1j * theta_hat(:, k));
-        
-        % Demapping
+    
+        % ===== DATA SYMBOL =====
+    
+        % 1) Amplitude equalization ONLY
+        Y_amp = Z(:,k) ./ H_est_amp;      % N×1
+    
+        % 2) Compute Viterbi–Viterbi raw phase (per carrier)
+        delta = 0.25 * angle(-Y_amp.^4);  % N×1
+    
+        % 3) Build rotation candidates (N×6)
+        rotations = pi/2 * (-1:4);        % 1×6
+        candidates = delta + rotations;   % N×6
+    
+        % 4) Compare each candidate with previous theta_hat
+        prev_rep = theta_hat .* ones(1,6);     % N×6
+        [~, idx] = min(abs(candidates - prev_rep), [], 2);
+    
+        % 5) Extract chosen candidate for each carrier
+        theta_new = candidates(sub2ind(size(candidates),(1:N).', idx));
+    
+        % 6) Smooth per-carrier phase (IIR tracking)
+        theta_hat = alpha * theta_new + (1-alpha) * theta_hat;
+    
+        % 7) Apply phase correction (AFTER amp equalization)
+        Y_corr = Y_amp .* exp(-1j * theta_hat);
+    
+        % 8) Demap
         bits_hat = demapper_QPSK(Y_corr(:));
-        rxbits = [rxbits ; bits_hat];
-        
-        fprintf('Processed OFDM symbol %d\n', k);
+        rxbits   = [rxbits ; bits_hat];
     end
+
 
 end

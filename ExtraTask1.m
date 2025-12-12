@@ -1,12 +1,12 @@
 close all; clear all; clc;
 
 %% ===================== SYSTEM CONFIG ============================
-packet_version = 2 ;
+packet_version = 1 ;
 
 % Emulator configuration
 conf.audiosystem = 'emulator';
-conf.emulator_idx = 2;
-conf.emulator_snr = 30;
+conf.emulator_idx = 3;
+conf.emulator_snr = 15;
 
 % General Parameters
 conf.f_c   = 8000;
@@ -20,8 +20,8 @@ conf.ofdm.bandwidth = 2000;
 conf.ofdm.ncarrier  = 512;
 conf.ofdm.cplen     = 256;
 conf.modulation_order = 2;
-conf.ofdm.OFDMnSyms = 20;
-conf.ofdm.train_period = 5;    % How many OFDM symbols per packet
+conf.ofdm.OFDMnSyms = 20;       % How many OFDM symbols per packet, packet version 1
+conf.ofdm.train_period = 20;    % How many OFDM symbols per packet, packet version 2
 
 % Audio settings
 conf.f_s = 48000;
@@ -43,9 +43,8 @@ conf.sc.txpulse        = rrc(conf.sc.os_factor, 0.22, conf.sc.txpulse_length);
 
 rng(0);
 
-
 %% ===================== LOAD IMAGE ============================
-img_tx = imread("img.png");   % grayscale image (uint8)
+img_tx = imread("img3.png");   % grayscale image (uint8)
 [H, W] = size(img_tx);
 
 tx_bits = image_encoder(img_tx);
@@ -83,7 +82,36 @@ switch packet_version
         rawtx = [rawtx zeros(size(rawtx))];
 
         % --- CHANNEL ---
-        rx = channel_emulator(rawtx(:,1), conf);
+        switch(conf.audiosystem)
+            case 'emulator'
+                rxsignal = channel_emulator(rawtxsignal(:,1),conf);
+            case 'audio'
+                % % % % % % % % % % % % %
+                % Begin
+                % Audio Transmission    
+               
+                txdur       = length(rawtxsignal)/conf.f_s; % calculate length of transmitted signal
+                audiowrite('out.wav',rawtxsignal,conf.f_s)
+                
+                disp('MATLAB generic');
+                playobj = audioplayer(rawtxsignal,conf.f_s,conf.bitsps);
+                recobj  = audiorecorder(conf.f_s,conf.bitsps,1);
+                record(recobj);
+                pause(2);
+                disp('Recording...');
+                playblocking(playobj)
+                pause(2);
+                stop(recobj);
+                disp('Recording ended')
+                rawrxsignal  = getaudiodata(recobj,'int16');
+                rawrxsignal     = double(rawrxsignal(1:end))/double(intmax('int16')) ;
+                rxsignal = rawrxsignal; 
+        
+                %
+                % End
+                % Audio Transmission   
+                % % % % % % % % % % % %
+        end
 
         % --- RX ---
         [rx_bits, conf] = rxofdm(rx, conf);         % rx_mode extratask1
