@@ -7,7 +7,7 @@ save = 0; % Set this variable to control saving of plots
 %% ----------------- BASE CONFIGURATION -----------------
 conf.audiosystem    = 'emulator';
 conf.emulator_idx   = 2;        % Channel ID 2 
-conf.emulator_snr   = 10;      % Let's start with 100 dB
+conf.emulator_snr   = 15;      % Let's start with 100 dB
 
 % General parameters 
 conf.nbits   = 500*2*50;       

@@ -1,10 +1,10 @@
-close all; clear all; clc;
+close all; clc;
 
 %% ===================== SYSTEM CONFIG ============================
 packet_version = 3;
 
 % Emulator configuration
-conf.audiosystem = 'audio';
+conf.audiosystem = 'emulator';
 conf.emulator_idx = 3;
 conf.emulator_snr = 15;
 

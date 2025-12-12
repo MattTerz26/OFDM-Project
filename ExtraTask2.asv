@@ -1,0 +1,94 @@
+close all; clear; clc;
+
+%% 1. CONFIGURATION
+rng(42);
+conf.f_c     = 6000;
+conf.f_s     = 48000;
+conf.bitsps  = 16;
+conf.Nsym    = 100;           
+conf.nbits   = 512 * 2 * conf.Nsym;   
+conf.enable_scrambler = true; % Toggle this ON
+
+% SC Preamble
+conf.sc.f_sym = 1000;          
+conf.sc.nsyms = 500;     
+conf.sc.os_factor = conf.f_s/conf.sc.f_sym;
+conf.sc.txpulse_length = 20*conf.sc.os_factor;
+conf.sc.txpulse = rrc(conf.sc.os_factor, 0.22, conf.sc.txpulse_length);
+
+% OFDM
+conf.ofdm.bandwidth = 2000;    
+conf.ofdm.ncarrier  = 512;     
+conf.ofdm.cplen     = 256;     
+conf.modulation_order = 2;     
+
+%% 2. GENERATE SIGNAL (TX)
+txbits_original = preamble_generate(conf.nbits); 
+
+% --- Scrambling in TX ---
+if conf.enable_scrambler
+    rng(42); 
+    scram_seq = randi([0 1], length(txbits_original), 1);
+    txbits_in = xor(txbits_original, scram_seq);
+else
+    txbits_in = txbits_original;
+end
+
+% Generate Waveform
+[txsignal, conf] = txofdm(txbits_in, conf); 
+
+% Prepare for Audio
+silence = zeros(conf.f_s, 1); % 1 sec silence
+rawtxsignal = [silence; txsignal; silence];
+
+% Normalize for Audio (Peak = 0.9)
+rawtxsignal = 0.9 * rawtxsignal / max(abs(rawtxsignal));
+
+%% 3. AUDIO TRANSMISSION
+disp('--- Press any key to start Recording/Playback ---');
+pause;
+
+recobj  = audiorecorder(conf.f_s, conf.bitsps, 1);
+playobj = audioplayer(rawtxsignal, conf.f_s, conf.bitsps);
+
+disp('Recording...');
+record(recobj);
+pause(2);
+playblocking(playobj);
+pause(0.5);
+stop(recobj);
+disp('Finished.');
+
+rawrxsignal = getaudiodata(recobj, 'double');
+
+%% 4. RX PROCESSING
+try
+    [rxbits, conf, H_est, Z_data] = rx_task2(rawrxsignal, conf);
+    disp('RX Task 2 Completed Successfully.');
+catch ME
+    error('RX Failed: %s', ME.message);
+end
+
+%% 5. ANALYSIS
+% BER Calculation
+ber = sum(rxbits ~= txbits_original) / length(txbits_original);
+fprintf('\n<strong>BER = %.5f</strong>\n', ber);
+
+% Channel Plotting
+N = conf.ofdm.ncarrier;
+
+% Frequency Response
+H_dB = 20*log10(abs(fftshift(H_est)));
+fAxis = linspace(-0.5, 0.5, N) * conf.ofdm.bandwidth;
+
+figure;
+subplot(2,1,1);
+plot(fAxis, H_dB, 'LineWidth', 1.5);
+title('Measured Channel Frequency Response');
+xlabel('Frequency [Hz]'); ylabel('Magnitude [dB]'); grid on;
+
+% Constellation
+subplot(2,1,2);
+plot(Z_data(:), '.', 'MarkerSize', 4);
+title(sprintf('Received Constellation (BER: %.5f)', ber));
+axis equal; grid on;

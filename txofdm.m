@@ -57,6 +57,20 @@ function [txsignal, conf] = tx_task1(txbits,conf)
     fc          = conf.f_c;                   
     os_sc       = conf.sc.os_factor;
     
+    % --- SCRAMBLER START ---
+    % We use a specific seed (42) so the Receiver can reproduce the sequence.
+    rng(42); 
+    
+    % Generate a random sequence of 0s and 1s the same length as your data
+    scramble_seq = randi([0 1], length(txbits), 1);
+    conf.ofdm.scramble_seq = scramble_seq;
+    
+    % XOR your image bits with this random sequence
+    bits_scrambled = xor(txbits, scramble_seq);
+    
+    % Replace the original bits with the scrambled ones
+    txbits = double(bits_scrambled);
+
     % mapping
     qpskSyms = mapper_QPSK(txbits);
     
@@ -222,7 +236,7 @@ function [txsignal, conf] = tx_extratask1(bits_in, conf)
     
     % ----- 3. Compute output positions for training symbols -----
     train_pos = data_pos(train_flags) - 1;              % training goes BEFORE each flagged data symbol
-    
+    conf.ofdm.train_pos = train_pos;
     % ----- 4. Build OFDM freq matrix -----
     all_ofdm_freq = zeros(N, total_symbols);
     
