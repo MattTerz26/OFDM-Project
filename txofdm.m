@@ -261,6 +261,9 @@ function [txsignal, conf] = tx_extratask1(bits_in, conf)
     audio_carrier = exp(1j * 2 * pi * fc * n / fs_audio);
     passband_signal = real(tx_baseband .* audio_carrier);
     
+    
+
+    
     % Final Scaling to avoid audio clipping
     % Normalize so that the maximum peak is 0.9
     max_val = max(abs(passband_signal));
@@ -270,5 +273,7 @@ function [txsignal, conf] = tx_extratask1(bits_in, conf)
         txsignal = passband_signal;
     else
         txsignal = (passband_signal / max_val) * 0.9;
+        
     end
+    plot(txsignal)
 end
