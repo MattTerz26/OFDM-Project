@@ -576,4 +576,14 @@ function [rxbits, conf] = rx_comb_alt(rxsignal, conf)
     end
 
     rxbits = rxbits(1:conf.nbits);
+    % --- DESCRAMBLER ---
+    if isfield(conf.ofdm, 'scramble_seq')
+        scramble_seq = conf.ofdm.scramble_seq;
+    else
+        rng(42);
+        scramble_seq = randi([0 1], conf.nbits, 1);  
+    end
+    
+    rxbits = xor(rxbits, scramble_seq);
+    % --- END DESCRAMBLER ---
 end

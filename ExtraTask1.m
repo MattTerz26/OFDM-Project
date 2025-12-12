@@ -4,7 +4,7 @@ close all; clc;
 packet_version = 3;
 
 % Emulator configuration
-conf.audiosystem = 'emulator';
+conf.audiosystem = 'audio';
 conf.emulator_idx = 3;
 conf.emulator_snr = 15;
 

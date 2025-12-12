@@ -323,6 +323,15 @@ function [txsignal, conf] = tx_comb_alt(txbits, conf)
     fs_audio   = conf.f_s;
     fc         = conf.f_c;
     os_sc      = conf.sc.os_factor;
+
+    % --- SCRAMBLER START ---
+    rng(42);
+    scramble_seq = randi([0 1], numel(txbits), 1);
+    conf.ofdm.scramble_seq = scramble_seq;
+    
+    txbits = double(xor(txbits, scramble_seq));
+    % --- SCRAMBLER END ---
+
     
     % ---------- Pilot pattern (diagonal comb) ----------
     pilotSpacing = conf.ofdm.pilotSpacing;
