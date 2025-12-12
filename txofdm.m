@@ -168,6 +168,20 @@ function [txsignal, conf] = tx_extratask1(bits_in, conf)
         conf.ofdm.train_period = 20;   % every 20 data-OFDM symbols
     end
     
+    % --- SCRAMBLER START ---
+    % We use a specific seed (42) so the Receiver can reproduce the sequence.
+    rng(42); 
+    
+    % Generate a random sequence of 0s and 1s the same length as your data
+    scramble_seq = randi([0 1], length(bits_in), 1);
+    conf.ofdm.scramble_seq = scramble_seq;
+    
+    % XOR your image bits with this random sequence
+    bits_scrambled = xor(bits_in, scramble_seq);
+    
+    % Replace the original bits with the scrambled ones
+    bits_in = double(bits_scrambled);
+
     % Packetization
     nbits = length(bits_in);
     nDataOFDM = ceil(nbits / bitsPerOFDM);
@@ -260,9 +274,6 @@ function [txsignal, conf] = tx_extratask1(bits_in, conf)
     n = (0:length(tx_baseband)-1).';
     audio_carrier = exp(1j * 2 * pi * fc * n / fs_audio);
     passband_signal = real(tx_baseband .* audio_carrier);
-    
-    
-
     
     % Final Scaling to avoid audio clipping
     % Normalize so that the maximum peak is 0.9

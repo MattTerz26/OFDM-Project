@@ -376,7 +376,23 @@ function [rxbits, conf] = rx_extratask1(rxsignal, conf)
         % 8) Demap
         bits_hat = demapper_QPSK(Y_corr(:));
         rxbits   = [rxbits ; bits_hat];
-    end
 
+    end
+    
+    % Keep only the first conf.nbits bits (safety)
+    if length(rxbits) < conf.nbits
+        error('rx_task2: not enough bits decoded (got %d, need %d).', ...
+               length(rxbits_all), conf.nbits);
+    end
+    rxbits = rxbits(1:conf.nbits);
+
+    % Check for scrambling configuration
+    if isfield(conf.ofdm, 'scramble_seq')
+        scramble_seq = conf.ofdm.scramble_seq;
+    else
+        rng(42);
+        scramble_seq = randi([0 1], length(bits_in), 1);
+    end
+    rxbits = xor(rxbits, scramble_seq);
 
 end
