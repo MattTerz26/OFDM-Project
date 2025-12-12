@@ -5,13 +5,13 @@ rng(42);
 conf.f_c     = 6000;
 conf.f_s     = 48000;
 conf.bitsps  = 16;
-conf.Nsym    = 100;           
+conf.Nsym    = 50;           
 conf.nbits   = 512 * 2 * conf.Nsym;   
 conf.enable_scrambler = true; % Toggle this ON
 
 % SC Preamble
-conf.sc.f_sym = 1000;          
-conf.sc.nsyms = 500;     
+conf.sc.f_sym = 500;          
+conf.sc.nsyms = 100;     
 conf.sc.os_factor = conf.f_s/conf.sc.f_sym;
 conf.sc.txpulse_length = 20*conf.sc.os_factor;
 conf.sc.txpulse = rrc(conf.sc.os_factor, 0.22, conf.sc.txpulse_length);
@@ -61,7 +61,7 @@ rxsignal = rawrxsignal;
 
 %% 4. RX PROCESSING
 try
-    [rxbits, conf, H_est, Z_data] = rx_extratask2(rawrxsignal, conf);
+    [rxbits, conf, H_est, Z_data, Y] = rx_extratask2(rawrxsignal, conf);
     disp('RX Task 2 Completed Successfully.');
 catch ME
     error('RX Failed: %s', ME.message);
@@ -160,7 +160,7 @@ grid on;
 
 % E. Constellation
 figure;
-plot(Z_data(:), '.', 'MarkerSize', 4);
+plot(Y(:), '.', 'MarkerSize', 4);
 hold on;
 % Plot ideal QPSK points for reference
 qpsk_ref = [1+1j, 1-1j, -1+1j, -1-1j] / sqrt(2); 
@@ -169,3 +169,12 @@ plot(qpsk_ref, 'rx', 'LineWidth', 2, 'MarkerSize', 10);
 title(sprintf('Received Constellation (BER: %.5f)', ber));
 axis equal; grid on;
 hold off;
+
+% Save all figures as images in the 'plot_extratask2' directory
+if ~exist('plot_extratask2', 'dir')
+    mkdir('plot_extratask2');
+end
+figHandles = findall(groot, 'Type', 'figure');
+for i = 1:length(figHandles)
+    saveas(figHandles(i), fullfile('plot_extratask2', sprintf('figure_%d.png', i)));
+end

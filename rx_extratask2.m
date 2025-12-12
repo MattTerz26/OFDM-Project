@@ -1,4 +1,4 @@
-function [rxbits, conf, H_est, Z_data] = rx_extratask2(rxsignal, conf)
+function [rxbits, conf, H_est, Z_data, Y_corr] = rx_extratask2(rxsignal, conf)
 % RX_TASK2 - Receiver for Audio OFDM with Scrambling and Phase Tracking
 
     % Constants

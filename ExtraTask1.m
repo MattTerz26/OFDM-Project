@@ -1,10 +1,10 @@
-close all; clc;
+close all; clc; clear all;
 
 %% ===================== SYSTEM CONFIG ============================
-packet_version = 3;
+packet_version = ;
 
 % Emulator configuration
-conf.audiosystem = 'audio';
+conf.audiosystem = 'emulator';
 conf.emulator_idx = 3;
 conf.emulator_snr = 15;
 
@@ -22,7 +22,7 @@ conf.ofdm.ncarrier  = 512;
 conf.ofdm.cplen     = 256;
 conf.modulation_order = 2;
 conf.ofdm.OFDMnSyms = 20;       % How many OFDM symbols per packet, packet version 1
-conf.ofdm.train_period = 5;    % How many OFDM symbols per packet, packet version 2
+conf.ofdm.train_period = 10;    % How many OFDM symbols per packet, packet version 2
 
 % Audio settings
 conf.f_s = 48000;
