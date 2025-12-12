@@ -72,7 +72,7 @@ function [rxbits, conf] = rx_task1(rxsignal, conf)
     % filtering for preamble
     rx_filt_p_det = lowpass(real(bb_rx), 2000, conf.f_s);
     
-    beginning_of_data = frame_sync_ofdm(rx_filt_p_det, conf);
+    beginning_of_data = frame_sync_ofdm_fast(rx_filt_p_det, conf);
 
     start_ofdm_idx = beginning_of_data + 1;
 
@@ -206,7 +206,7 @@ function [rxbits, conf]  = rx_task2(rxsignal, conf)
     % Phase tracking and phase correction
     
     if ~isfield(conf.ofdm, 'alpha')
-        alpha = 1;  % Default value if alpha is not defined
+        alpha = 0.1;  % Default value if alpha is not defined
     else
         alpha = conf.ofdm.alpha;  % IIR filter coefficient
     end
@@ -326,7 +326,7 @@ function [rxbits, conf] = rx_extratask1(rxsignal, conf)
     theta_hat = zeros(N,1);         % per-carrier tracked phase
     haveH     = false;
     
-    alpha = 0.90;                   % smoothing for data symbols
+    alpha = 0.1;                   % smoothing for data symbols
     
     rxbits = [];
     

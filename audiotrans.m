@@ -11,8 +11,8 @@ close all;
 % Options for transmission are : 
 % emulator: use a channel emulator with 5 different configurations.
 % audio: use the loudspeaker and microphone for the data transmission
-conf.audiosystem = 'emulator';
-conf.ofdm.alpha = 1;
+conf.audiosystem = 'audio';
+conf.ofdm.alpha = 0.01;
 
 % Task reciever selection
 conf.rx_mode = "task2";
@@ -22,12 +22,12 @@ conf.emulator_idx = 2; % 1 to 5 yields different channels
 conf.emulator_snr = 15;
 
 % General parameters 
-OFDMnSyms = 40;
+OFDMnSyms = 10;
 conf.nbits   = 512*2*OFDMnSyms;  % number of bits 
 conf.f_c     = 6000;
 
 % Preamble
-conf.sc.f_sym = 100;  % symbol rate
+conf.sc.f_sym = 1000;  % symbol rate
 conf.sc.nsyms = 500;   % number of preamble symbols
 
 %OFDM

@@ -269,6 +269,10 @@ function [txsignal, conf] = tx_extratask1(bits_in, conf)
     if max_val == 0
         txsignal = passband_signal;
     else
+        %txsignal = passband_signal;
         txsignal = (passband_signal / max_val) * 0.9;
+        %A = 0.8;                     % gewünschte Peak-Grenze
+        %y = passband_signal;
+        %txsignal = A * tanh(y / A);  % soft limiter
     end
 end
