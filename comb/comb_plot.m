@@ -3,7 +3,7 @@
 clear; clc;
 
 %% Manual parameters
-pilotSpacing = 140;   % pilot spacing in frequency
+pilotSpacing = 100;   % pilot spacing in frequency
 pilotShift   = 1;     % shift per OFDM symbol
 N            = 512;   % number of subcarriers
 nDataOfdmSym = 50;    % number of data symbols (1st = training)

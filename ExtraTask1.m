@@ -1,7 +1,7 @@
 close all; clear all; clc;
 
 %% ===================== SYSTEM CONFIG ============================
-packet_version = 2;
+packet_version = 3;
 
 % Emulator configuration
 conf.audiosystem = 'audio';
@@ -10,6 +10,7 @@ conf.emulator_snr = 15;
 
 % General Parameters
 conf.f_c   = 6000;
+conf.ofdm.pilotSpacing = 100; %comb type training spacing
 
 % Preamble
 conf.sc.f_sym = 1000;
@@ -44,7 +45,7 @@ conf.sc.txpulse        = rrc(conf.sc.os_factor, 0.22, conf.sc.txpulse_length);
 rng(0);
 
 %% ===================== LOAD IMAGE ============================
-img_tx = imread("img4.png");   % grayscale image (uint8)
+img_tx = imread("img3.png");   % grayscale image (uint8)
 [H, W] = size(img_tx);
 
 tx_bits = image_encoder(img_tx);
@@ -113,8 +114,50 @@ switch packet_version
                 % % % % % % % % % % % %
         end
 
+        
+
         % --- RX ---
         [rx_bits, conf] = rxofdm(rxsignal, conf);         % rx_mode extratask1
+
+    case 3
+        disp('Packet version 3 selected: (p + train + data1 + train + data2 ...) with Comb-Type training');
+        
+        % Set receiver and transmitter modes for Comb-Type training
+        conf.rx_mode = "combtype";         % Receiver using Comb-Type
+        conf.tx_mode = "combtype";         % Transmitter using Comb-Type
+        
+        % Perform the transmission and generate the signal
+        [txsignal, conf] = txofdm(tx_bits, conf);
+        
+        rawtx = [zeros(conf.f_s,1); txsignal; zeros(conf.f_s,1)];
+        rawtx = [rawtx zeros(size(rawtx))];
+        
+        % --- CHANNEL ---
+        switch(conf.audiosystem)
+            case 'emulator'
+                rxsignal = channel_emulator(rawtx(:,1),conf);
+            case 'audio'
+                % Audio Transmission
+                txdur       = length(rawtx)/conf.f_s; % calculate length of transmitted signal
+                audiowrite('out.wav',rawtx,conf.f_s)
+                
+                disp('MATLAB generic');
+                playobj = audioplayer(rawtx,conf.f_s,conf.bitsps);
+                recobj  = audiorecorder(conf.f_s,conf.bitsps,1);
+                record(recobj);
+                pause(2);
+                disp('Recording...');
+                playblocking(playobj)
+                pause(2);
+                stop(recobj);
+                disp('Recording ended')
+                rawrxsignal  = getaudiodata(recobj,'int16');
+                rawrxsignal  = double(rawrxsignal(1:end))/double(intmax('int16')) ;
+                rxsignal = rawrxsignal; 
+        end
+
+        % --- RX ---
+        [rx_bits, conf] = rxofdm(rxsignal, conf);         % rx_mode combtype
     otherwise   
         disp('Warning: Unsupported packet version. Please check the configuration.');
 end
