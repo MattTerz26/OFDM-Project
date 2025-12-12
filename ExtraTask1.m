@@ -1,15 +1,15 @@
 close all; clear all; clc;
 
 %% ===================== SYSTEM CONFIG ============================
-packet_version = 1 ;
+packet_version = 2;
 
 % Emulator configuration
-conf.audiosystem = 'emulator';
+conf.audiosystem = 'audio';
 conf.emulator_idx = 3;
 conf.emulator_snr = 15;
 
 % General Parameters
-conf.f_c   = 8000;
+conf.f_c   = 6000;
 
 % Preamble
 conf.sc.f_sym = 1000;
@@ -21,7 +21,7 @@ conf.ofdm.ncarrier  = 512;
 conf.ofdm.cplen     = 256;
 conf.modulation_order = 2;
 conf.ofdm.OFDMnSyms = 20;       % How many OFDM symbols per packet, packet version 1
-conf.ofdm.train_period = 20;    % How many OFDM symbols per packet, packet version 2
+conf.ofdm.train_period = 5;    % How many OFDM symbols per packet, packet version 2
 
 % Audio settings
 conf.f_s = 48000;
@@ -44,7 +44,7 @@ conf.sc.txpulse        = rrc(conf.sc.os_factor, 0.22, conf.sc.txpulse_length);
 rng(0);
 
 %% ===================== LOAD IMAGE ============================
-img_tx = imread("img3.png");   % grayscale image (uint8)
+img_tx = imread("img4.png");   % grayscale image (uint8)
 [H, W] = size(img_tx);
 
 tx_bits = image_encoder(img_tx);
@@ -84,17 +84,17 @@ switch packet_version
         % --- CHANNEL ---
         switch(conf.audiosystem)
             case 'emulator'
-                rxsignal = channel_emulator(rawtxsignal(:,1),conf);
+                rxsignal = channel_emulator(rawtx(:,1),conf);
             case 'audio'
                 % % % % % % % % % % % % %
                 % Begin
                 % Audio Transmission    
                
-                txdur       = length(rawtxsignal)/conf.f_s; % calculate length of transmitted signal
-                audiowrite('out.wav',rawtxsignal,conf.f_s)
+                txdur       = length(rawtx)/conf.f_s; % calculate length of transmitted signal
+                audiowrite('out.wav',rawtx,conf.f_s)
                 
                 disp('MATLAB generic');
-                playobj = audioplayer(rawtxsignal,conf.f_s,conf.bitsps);
+                playobj = audioplayer(rawtx,conf.f_s,conf.bitsps);
                 recobj  = audiorecorder(conf.f_s,conf.bitsps,1);
                 record(recobj);
                 pause(2);
@@ -114,7 +114,7 @@ switch packet_version
         end
 
         % --- RX ---
-        [rx_bits, conf] = rxofdm(rx, conf);         % rx_mode extratask1
+        [rx_bits, conf] = rxofdm(rxsignal, conf);         % rx_mode extratask1
     otherwise   
         disp('Warning: Unsupported packet version. Please check the configuration.');
 end

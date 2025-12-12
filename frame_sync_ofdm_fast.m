@@ -22,7 +22,7 @@ function beginning_of_data = frame_sync_ofdm_fast(rx_bb, conf)
     expected = conf.f_s;
     search_end   = min(length(rx_bb), expected + margin + length(conf.sc.preamble_bb));
 
-    rx_sub = rx_bb(1:search_end);
+    rx_sub = rx_bb(:);
 
     % Preamble
     p = conf.sc.preamble_bb(:);

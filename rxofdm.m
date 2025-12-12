@@ -206,7 +206,7 @@ function [rxbits, conf]  = rx_task2(rxsignal, conf)
     % Phase tracking and phase correction
     
     if ~isfield(conf.ofdm, 'alpha')
-        alpha = 1;  % Default value if alpha is not defined
+        alpha = 0.1;  % Default value if alpha is not defined
     else
         alpha = conf.ofdm.alpha;  % IIR filter coefficient
     end
@@ -326,7 +326,7 @@ function [rxbits, conf] = rx_extratask1(rxsignal, conf)
     theta_hat = zeros(N,1);         % per-carrier tracked phase
     haveH     = false;
     
-    alpha = 0.90;                   % smoothing for data symbols
+    alpha = 0.1;                   % smoothing for data symbols
     
     rxbits = [];
     
