@@ -1,15 +1,15 @@
 close all; clc; clear all;
 
 %% ===================== SYSTEM CONFIG ============================
-packet_version = ;
+packet_version = 2;
 
 % Emulator configuration
-conf.audiosystem = 'emulator';
-conf.emulator_idx = 3;
+conf.audiosystem = 'audio';
+conf.emulator_idx = 4;
 conf.emulator_snr = 15;
 
 % General Parameters
-conf.f_c   = 6000;
+conf.f_c   = 2000;
 conf.ofdm.pilotSpacing = 100; %comb type training spacing
 
 % Preamble
@@ -178,3 +178,14 @@ img_rx = image_decoder(rx_bits, [H W]);
 figure;
 subplot(1,2,1); imshow(img_tx); title("TX Image");
 subplot(1,2,2); imshow(img_rx); title("RX Image");
+
+
+% Create output folder if it does not exist
+outdir = "extratask1";
+if ~exist(outdir, 'dir')
+    mkdir(outdir);
+end
+
+% Save current figure
+exportgraphics(gcf, fullfile(outdir, "tx_rx_image.png"), ...
+    'Resolution', 300);

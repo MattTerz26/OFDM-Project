@@ -15,10 +15,10 @@ conf.audiosystem = 'audio';
 conf.ofdm.alpha = 0.1;
 
 % Task receiver selection
-conf.rx_mode = "combtype";
+conf.rx_mode = "task2";
 
 % Task transmitter selection
-conf.tx_mode = "combtype";
+conf.tx_mode = "task1";
 
 %Emulator configuration
 conf.emulator_idx = 2; % 1 to 5 yields different channels

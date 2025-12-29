@@ -6,7 +6,7 @@ save_fig = 1;
 
 %% Base configuration
 conf.audiosystem  = 'emulator';
-conf.f_c          = 8000;
+conf.f_c          = 4000;
 
 conf.ofdm.bandwidth   = 2000;
 conf.ofdm.ncarrier    = 512;     % N
@@ -106,6 +106,9 @@ for sIdx = 1:nSpac
     ps = pilotSpacing_vec(sIdx);
     fprintf('\nSpacing %d:\n', ps);
     for cIdx = 1:nChan
+        if cIdx == 4
+            continue;   % skip channel 4 
+        end
         fprintf('Ch %d -> BER %.3e  (%d/%d)\n', ...
             emulator_ids(cIdx), BER_mat(cIdx, sIdx), ...
             ERR_mat(cIdx, sIdx), NbitsMat(cIdx, sIdx));
